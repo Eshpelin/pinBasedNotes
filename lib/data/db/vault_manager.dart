@@ -3,11 +3,21 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'migrations.dart';
+import 'meta_db_manager.dart';
 
 /// Exception thrown when the PIN is incorrect for an existing vault
 class IncorrectPinException implements Exception {
   final String message;
   IncorrectPinException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Exception thrown when the user has exceeded the rate limit for PIN attempts
+class RateLimitExceededException implements Exception {
+  final String message;
+  RateLimitExceededException(this.message);
 
   @override
   String toString() => message;
@@ -23,13 +33,23 @@ class VaultException implements Exception {
 }
 
 class VaultManager {
+  /// The maximum number of unique PIN attempts per day
+  static const int maxPinAttemptsPerDay = 10;
+
   /// Open or create a vault for the given PIN
   ///
   /// Returns a Database instance if successful
   /// Throws IncorrectPinException if the PIN is wrong for an existing vault
+  /// Throws RateLimitExceededException if the user has tried too many unique PINs today
   /// Throws VaultException for other database errors
   static Future<Database> openVault(String pin) async {
     try {
+      // Check rate limit before proceeding
+      final attempts = await MetaDbManager.getUniquePinAttemptsToday();
+      if (attempts >= maxPinAttemptsPerDay) {
+        throw RateLimitExceededException('You have tried too many different PINs today. Please try again tomorrow.');
+      }
+
       // Validate PIN
       if (pin.isEmpty || pin.length < 4 || pin.length > 10) {
         throw VaultException('PIN must be between 4 and 10 digits');
@@ -46,14 +66,13 @@ class VaultManager {
         password: pin,
         version: DatabaseMigrations.currentVersion,
         onCreate: (db, version) async {
-          // Run all migrations for new database
+          // Run all migrations for a new database
           await DatabaseMigrations.migrate(db, 0, version);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
-          // Run migrations for existing database
+          // Run migrations for an existing database
           await DatabaseMigrations.migrate(db, oldVersion, newVersion);
         },
-        // Important: Don't use onOpen for validation as it runs after decryption succeeds
       );
 
       // Test the database connection by running a simple query
@@ -63,6 +82,7 @@ class VaultManager {
       } catch (e) {
         await database.close();
         if (dbExists) {
+          await MetaDbManager.logPinAttempt(pin);
           throw IncorrectPinException('Incorrect PIN. Try again.');
         }
         rethrow;
@@ -71,11 +91,14 @@ class VaultManager {
       return database;
     } on IncorrectPinException {
       rethrow;
+    } on RateLimitExceededException {
+      rethrow;
     } on DatabaseException catch (e) {
       // SQLCipher throws DatabaseException when decryption fails
       if (e.toString().contains('file is not a database') ||
           e.toString().contains('file is encrypted') ||
           e.toString().contains('cipher')) {
+        await MetaDbManager.logPinAttempt(pin);
         throw IncorrectPinException('Incorrect PIN. Try again.');
       }
       throw VaultException('Database error: ${e.toString()}');
