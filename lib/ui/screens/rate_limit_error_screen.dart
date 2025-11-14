@@ -1,8 +1,35 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class RateLimitErrorScreen extends StatelessWidget {
+class RateLimitErrorScreen extends StatefulWidget {
   const RateLimitErrorScreen({super.key});
+
+  @override
+  State<RateLimitErrorScreen> createState() => _RateLimitErrorScreenState();
+}
+
+class _RateLimitErrorScreenState extends State<RateLimitErrorScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Update the countdown every second for real-time updates
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild with the updated time
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   String _getNextResetTime() {
     final now = DateTime.now();
@@ -81,7 +108,7 @@ class RateLimitErrorScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  // Info Card
+                  // Info Card with countdown
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -106,6 +133,7 @@ class RateLimitErrorScreen extends StatelessWidget {
                             fontSize: 14,
                             color: Colors.grey.shade700,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -115,6 +143,7 @@ class RateLimitErrorScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Colors.red.shade700,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -123,6 +152,7 @@ class RateLimitErrorScreen extends StatelessWidget {
                             fontSize: 14,
                             color: Colors.grey.shade600,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
