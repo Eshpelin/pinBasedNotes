@@ -3,6 +3,10 @@
 
     <!-- No internet permission - fully offline app -->
 
+    <!-- Camera and storage permissions for image insertion -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:label="PIN Notes"
         android:name="${applicationName}"

@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:dart_quill_delta/dart_quill_delta.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/notes_providers.dart';
 import '../../utils/debounce.dart';
 import '../../utils/date_format.dart';
@@ -108,6 +110,48 @@ class EditorScreen extends HookConsumerWidget {
       return subscription.cancel;
     }, [controller]);
 
+    // Image insertion methods
+    Future<void> insertImage(ImageSource source) async {
+      try {
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+
+        if (image == null) return;
+
+        // Read image as bytes and convert to base64
+        final bytes = await File(image.path).readAsBytes();
+        final base64Image = base64Encode(bytes);
+        final dataUrl = 'data:image/${image.path.split('.').last};base64,$base64Image';
+
+        // Insert image at current cursor position
+        final index = controller.selection.baseOffset;
+        final length = controller.selection.extentOffset - index;
+
+        controller.document.delete(index, length);
+        controller.document.insert(index, BlockEmbed.image(dataUrl));
+
+        // Move cursor after the image
+        controller.updateSelection(
+          TextSelection.collapsed(offset: index + 1),
+          ChangeSource.local,
+        );
+
+        hasUnsavedChanges.value = true;
+        saveNote();
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to insert image: $e')),
+          );
+        }
+      }
+    }
+
     return PopScope(
       canPop: !hasUnsavedChanges.value,
       onPopInvokedWithResult: (didPop, result) async {
@@ -211,6 +255,35 @@ class EditorScreen extends HookConsumerWidget {
                     showSuperscript: false,
                     showUnderLineButton: true,
                     showUndo: true,
+                  ),
+                ),
+                const Divider(height: 1, thickness: 1),
+
+                // Custom image/camera toolbar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  color: Colors.grey.shade100,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.photo_library, size: 20),
+                        tooltip: 'Insert from Gallery',
+                        onPressed: () => insertImage(ImageSource.gallery),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.camera_alt, size: 20),
+                        tooltip: 'Take Photo',
+                        onPressed: () => insertImage(ImageSource.camera),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Insert Image',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const Divider(height: 1, thickness: 1),
