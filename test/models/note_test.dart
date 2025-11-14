@@ -238,5 +238,136 @@ void main() {
       expect(str, contains('1000'));
       expect(str, contains('2000'));
     });
+
+    group('Image Handling', () {
+      test('handles Delta with embedded image', () {
+        // Sample base64 image data (1x1 transparent PNG)
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'Text before image\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\nText after image\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        expect(note.content, contains('data:image/png;base64'));
+        expect(note.content, contains(base64Image));
+      });
+
+      test('plainText handles images correctly', () {
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'Text before\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\nText after\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        // Quill includes image embed as a special character in plainText
+        final plainText = note.plainText;
+        expect(plainText, isNotEmpty);
+        expect(plainText, contains('Text before'));
+        expect(plainText, contains('Text after'));
+      });
+
+      test('title extraction works with images in content', () {
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'My Title\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\nBody text\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        expect(note.title, equals('My Title'));
+      });
+
+      test('preview works with images in content', () {
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'Title\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\nThis is the body text\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        final preview = note.preview;
+        expect(preview, isNotEmpty);
+        expect(preview, isNot(equals('No content')));
+      });
+
+      test('handles multiple images in content', () {
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'First image:\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\nSecond image:\n'},
+          {'insert': {'image': 'data:image/jpeg;base64,$base64Image'}},
+          {'insert': '\nEnd\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        expect(note.content, contains('data:image/png;base64'));
+        expect(note.content, contains('data:image/jpeg;base64'));
+        final plainText = note.plainText;
+        expect(plainText, contains('First image'));
+        expect(plainText, contains('Second image'));
+      });
+
+      test('content storage preserves image data', () {
+        const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final deltaJson = jsonEncode([
+          {'insert': 'Title\n'},
+          {'insert': {'image': 'data:image/png;base64,$base64Image'}},
+          {'insert': '\n'}
+        ]);
+
+        final note = Note(
+          id: '123',
+          content: deltaJson,
+          createdAt: 1000,
+          updatedAt: 1000,
+        );
+
+        // Verify image data is preserved in content
+        expect(note.content, contains('data:image/png;base64'));
+        expect(note.content, contains(base64Image));
+
+        // Test copyWith preserves image data
+        final copied = note.copyWith(updatedAt: 2000);
+        expect(copied.content, equals(note.content));
+        expect(copied.content, contains('data:image/png;base64'));
+      });
+    });
   });
 }
