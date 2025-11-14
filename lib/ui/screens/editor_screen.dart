@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/notes_providers.dart';
 import '../../utils/debounce.dart';
 import '../../utils/date_format.dart';
+import '../../utils/ml_title_generator.dart';
 
 class EditorScreen extends HookConsumerWidget {
   final String noteId;
@@ -19,6 +20,7 @@ class EditorScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final noteAsync = ref.watch(noteProvider(noteId));
     final controller = useMemoized(() => QuillController.basic());
+    final titleController = useTextEditingController();
     final focusNode = useFocusNode();
     final scrollController = useScrollController();
 
@@ -29,6 +31,7 @@ class EditorScreen extends HookConsumerWidget {
     final lastSaved = useState<int?>(null);
     final hasUnsavedChanges = useState(false);
     final isInitialLoad = useState(true);
+    final isTitleManuallyEdited = useState(false);
 
     // Dispose resources when widget is disposed
     useEffect(() {
@@ -38,7 +41,7 @@ class EditorScreen extends HookConsumerWidget {
       };
     }, []);
 
-    // Load note content into controller
+    // Load note content and title into controllers
     useEffect(() {
       noteAsync.whenData((note) {
         if (note != null) {
@@ -47,6 +50,15 @@ class EditorScreen extends HookConsumerWidget {
             // Only update on initial load to avoid cursor jumping during editing
             if (isInitialLoad.value) {
               controller.document = Document.fromDelta(delta);
+              titleController.text = note.title;
+
+              // Check if title appears to be auto-generated using ML
+              final plainText = controller.document.toPlainText().trim();
+              final (_, isGibberish) = MLTitleGenerator.generateTitle(plainText);
+              // If title is empty or looks auto-generated, allow ML to regenerate
+              isTitleManuallyEdited.value = note.title.isNotEmpty &&
+                  !plainText.toLowerCase().startsWith(note.title.toLowerCase());
+
               lastSaved.value = note.updatedAt;
               hasUnsavedChanges.value = false;
               isInitialLoad.value = false;
@@ -55,6 +67,7 @@ class EditorScreen extends HookConsumerWidget {
               // Save cursor position before update
               final selection = controller.selection;
               controller.document = Document.fromDelta(delta);
+              titleController.text = note.title;
               // Restore cursor position if valid
               if (selection.isValid && selection.end <= controller.document.length) {
                 controller.updateSelection(selection, ChangeSource.local);
@@ -65,6 +78,7 @@ class EditorScreen extends HookConsumerWidget {
             // If JSON parsing fails, treat as plain text
             if (isInitialLoad.value) {
               controller.document = Document()..insert(0, note.content);
+              titleController.text = note.title;
               isInitialLoad.value = false;
             }
           }
@@ -74,8 +88,8 @@ class EditorScreen extends HookConsumerWidget {
     }, [noteAsync]);
 
     // Auto-save functionality
-    void saveNote() {
-      if (!hasUnsavedChanges.value) return;
+    void saveNote({bool forceTitleUpdate = false}) {
+      if (!hasUnsavedChanges.value && !forceTitleUpdate) return;
 
       debouncer(() async {
         isSaving.value = true;
@@ -83,8 +97,30 @@ class EditorScreen extends HookConsumerWidget {
           final delta = controller.document.toDelta();
           final deltaJson = jsonEncode(delta.toJson());
 
+          // Auto-generate title using ML if it hasn't been manually edited
+          String titleToSave = titleController.text;
+          if (!isTitleManuallyEdited.value || forceTitleUpdate) {
+            final plainText = controller.document.toPlainText().trim();
+            final (generated, isGibberish) = MLTitleGenerator.generateTitle(plainText);
+            if (generated.isNotEmpty) {
+              titleToSave = generated;
+              titleController.text = titleToSave;
+
+              // Show a subtle indicator for gibberish detection
+              if (isGibberish && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🎲 Gibberish detected! Generated a funny title'),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            }
+          }
+
           final notifier = ref.read(notesNotifierProvider.notifier);
-          await notifier.updateNote(noteId, deltaJson);
+          await notifier.updateNote(noteId, title: titleToSave, content: deltaJson);
           lastSaved.value = DateTime.now().millisecondsSinceEpoch;
           hasUnsavedChanges.value = false;
         } catch (e) {
@@ -162,8 +198,19 @@ class EditorScreen extends HookConsumerWidget {
           try {
             final delta = controller.document.toDelta();
             final deltaJson = jsonEncode(delta.toJson());
+
+            // Auto-generate title using ML if needed
+            String titleToSave = titleController.text;
+            if (!isTitleManuallyEdited.value) {
+              final plainText = controller.document.toPlainText().trim();
+              final (generated, _) = MLTitleGenerator.generateTitle(plainText);
+              if (generated.isNotEmpty) {
+                titleToSave = generated;
+              }
+            }
+
             final notifier = ref.read(notesNotifierProvider.notifier);
-            await notifier.updateNote(noteId, deltaJson);
+            await notifier.updateNote(noteId, title: titleToSave, content: deltaJson);
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -230,6 +277,37 @@ class EditorScreen extends HookConsumerWidget {
 
             return Column(
               children: [
+                // Title TextField
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                    ),
+                  ),
+                  child: TextField(
+                    controller: titleController,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Note Title',
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+                      // Mark as manually edited when user types
+                      if (value.isNotEmpty) {
+                        isTitleManuallyEdited.value = true;
+                      }
+                      hasUnsavedChanges.value = true;
+                      saveNote();
+                    },
+                  ),
+                ),
+
                 // Rich text toolbar
                 QuillSimpleToolbar(
                   controller: controller,

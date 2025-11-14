@@ -34,6 +34,7 @@ void main() {
     test('fromMap() creates note from database map', () {
       final map = {
         'id': '123-456-789',
+        'title': 'Test Title',
         'content': 'Test content',
         'createdAt': 1000000,
         'updatedAt': 2000000,
@@ -42,6 +43,7 @@ void main() {
       final note = Note.fromMap(map);
 
       expect(note.id, equals('123-456-789'));
+      expect(note.title, equals('Test Title'));
       expect(note.content, equals('Test content'));
       expect(note.createdAt, equals(1000000));
       expect(note.updatedAt, equals(2000000));
@@ -50,6 +52,7 @@ void main() {
     test('toMap() converts note to database map', () {
       final note = Note(
         id: '123-456-789',
+        title: 'Test Title',
         content: 'Test content',
         createdAt: 1000000,
         updatedAt: 2000000,
@@ -58,6 +61,7 @@ void main() {
       final map = note.toMap();
 
       expect(map['id'], equals('123-456-789'));
+      expect(map['title'], equals('Test Title'));
       expect(map['content'], equals('Test content'));
       expect(map['createdAt'], equals(1000000));
       expect(map['updatedAt'], equals(2000000));
@@ -69,6 +73,7 @@ void main() {
       ]);
       final note = Note(
         id: '123',
+        title: '',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 1000,
@@ -80,6 +85,7 @@ void main() {
     test('plainText falls back to raw content on parse error', () {
       final note = Note(
         id: '123',
+        title: '',
         content: 'invalid json',
         createdAt: 1000,
         updatedAt: 1000,
@@ -88,37 +94,39 @@ void main() {
       expect(note.plainText, equals('invalid json'));
     });
 
-    test('title returns first line of content', () {
+    test('title field stores custom title', () {
       final deltaJson = jsonEncode([
         {'insert': 'First Line\nSecond Line\n'}
       ]);
       final note = Note(
         id: '123',
+        title: 'My Custom Title',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 1000,
       );
 
-      expect(note.title, equals('First Line'));
+      expect(note.title, equals('My Custom Title'));
     });
 
-    test('title returns "Untitled" for empty content', () {
+    test('displayTitle returns "Untitled" for empty title', () {
       final note = Note.create();
-      expect(note.title, equals('Untitled'));
+      expect(note.displayTitle, equals('Untitled'));
     });
 
-    test('title returns "Untitled" for whitespace-only content', () {
+    test('displayTitle returns "Untitled" for whitespace-only title', () {
       final deltaJson = jsonEncode([
-        {'insert': '   \n'}
+        {'insert': 'Some content\n'}
       ]);
       final note = Note(
         id: '123',
+        title: '   ',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 1000,
       );
 
-      expect(note.title, equals('Untitled'));
+      expect(note.displayTitle, equals('Untitled'));
     });
 
     test('preview returns first 3 lines', () {
@@ -127,6 +135,7 @@ void main() {
       ]);
       final note = Note(
         id: '123',
+        title: '',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 1000,
@@ -142,6 +151,7 @@ void main() {
       ]);
       final note = Note(
         id: '123',
+        title: '',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 1000,
@@ -159,17 +169,20 @@ void main() {
     test('copyWith() creates a new note with updated fields', () {
       final original = Note(
         id: '123',
+        title: 'original title',
         content: 'original',
         createdAt: 1000,
         updatedAt: 1000,
       );
 
       final updated = original.copyWith(
+        title: 'updated title',
         content: 'updated',
         updatedAt: 2000,
       );
 
       expect(updated.id, equals('123'));
+      expect(updated.title, equals('updated title'));
       expect(updated.content, equals('updated'));
       expect(updated.createdAt, equals(1000));
       expect(updated.updatedAt, equals(2000));
@@ -179,6 +192,7 @@ void main() {
     test('equality operator works correctly', () {
       final note1 = Note(
         id: '123',
+        title: 'test title',
         content: 'test',
         createdAt: 1000,
         updatedAt: 1000,
@@ -186,6 +200,7 @@ void main() {
 
       final note2 = Note(
         id: '123',
+        title: 'test title',
         content: 'test',
         createdAt: 1000,
         updatedAt: 1000,
@@ -193,6 +208,7 @@ void main() {
 
       final note3 = Note(
         id: '456',
+        title: 'test title',
         content: 'test',
         createdAt: 1000,
         updatedAt: 1000,
@@ -205,6 +221,7 @@ void main() {
     test('hashCode is consistent', () {
       final note1 = Note(
         id: '123',
+        title: 'test title',
         content: 'test',
         createdAt: 1000,
         updatedAt: 1000,
@@ -212,6 +229,7 @@ void main() {
 
       final note2 = Note(
         id: '123',
+        title: 'test title',
         content: 'test',
         createdAt: 1000,
         updatedAt: 1000,
@@ -222,10 +240,11 @@ void main() {
 
     test('toString() returns formatted string', () {
       final deltaJson = jsonEncode([
-        {'insert': 'Test Title\n'}
+        {'insert': 'Test Content\n'}
       ]);
       final note = Note(
         id: '123',
+        title: 'Test Title',
         content: deltaJson,
         createdAt: 1000,
         updatedAt: 2000,
@@ -251,6 +270,7 @@ void main() {
 
         final note = Note(
           id: '123',
+          title: '',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,
@@ -270,6 +290,7 @@ void main() {
 
         final note = Note(
           id: '123',
+          title: '',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,
@@ -282,16 +303,17 @@ void main() {
         expect(plainText, contains('Text after'));
       });
 
-      test('title extraction works with images in content', () {
+      test('title field works with images in content', () {
         const base64Image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
         final deltaJson = jsonEncode([
-          {'insert': 'My Title\n'},
+          {'insert': 'Content text\n'},
           {'insert': {'image': 'data:image/png;base64,$base64Image'}},
           {'insert': '\nBody text\n'}
         ]);
 
         final note = Note(
           id: '123',
+          title: 'My Title',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,
@@ -310,6 +332,7 @@ void main() {
 
         final note = Note(
           id: '123',
+          title: '',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,
@@ -332,6 +355,7 @@ void main() {
 
         final note = Note(
           id: '123',
+          title: '',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,
@@ -354,6 +378,7 @@ void main() {
 
         final note = Note(
           id: '123',
+          title: '',
           content: deltaJson,
           createdAt: 1000,
           updatedAt: 1000,

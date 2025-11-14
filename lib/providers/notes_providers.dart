@@ -50,9 +50,9 @@ class NotesNotifier extends AutoDisposeAsyncNotifier<void> {
     return note;
   }
 
-  /// Update a note's content
-  Future<void> updateNote(String id, String content) async {
-    await _repository.updateNote(id, content);
+  /// Update a note's title and/or content
+  Future<void> updateNote(String id, {String? title, String? content}) async {
+    await _repository.updateNote(id, title: title, content: content);
     // Invalidate providers to trigger refresh
     ref.invalidate(notesListProvider);
     ref.invalidate(noteProvider(id));

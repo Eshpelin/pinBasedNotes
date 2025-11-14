@@ -9,10 +9,11 @@ void main() {
     group('NoteTile', () {
       testWidgets('displays note title', (WidgetTester tester) async {
         final deltaJson = jsonEncode([
-          {'insert': 'Test Title\nTest content\n'}
+          {'insert': 'Test content\n'}
         ]);
         final note = Note(
           id: '123',
+          title: 'Test Title',
           content: deltaJson,
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -35,10 +36,11 @@ void main() {
 
       testWidgets('displays note preview', (WidgetTester tester) async {
         final deltaJson = jsonEncode([
-          {'insert': 'Title\nPreview content here\n'}
+          {'insert': 'Preview content here\n'}
         ]);
         final note = Note(
           id: '123',
+          title: 'My Note Title',
           content: deltaJson,
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -56,7 +58,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Title\nPreview content here'), findsOneWidget);
+        expect(find.text('Preview content here'), findsOneWidget);
       });
 
       testWidgets('displays "Untitled" for empty note', (WidgetTester tester) async {

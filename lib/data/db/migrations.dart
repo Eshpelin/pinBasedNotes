@@ -5,7 +5,7 @@ class DatabaseMigrations {
   static const int initialVersion = 1;
 
   /// Current database version
-  static const int currentVersion = 1;
+  static const int currentVersion = 2;
 
   /// Run all migrations up to the current version
   static Future<void> migrate(Database db, int oldVersion, int newVersion) async {
@@ -21,10 +21,9 @@ class DatabaseMigrations {
       case 1:
         await _migration1(db);
         break;
-      // Future migrations can be added here
-      // case 2:
-      //   await _migration2(db);
-      //   break;
+      case 2:
+        await _migration2(db);
+        break;
       default:
         throw Exception('Unknown migration version: $version');
     }
@@ -44,6 +43,14 @@ class DatabaseMigrations {
     // Create an index on updatedAt for faster sorting
     await db.execute('''
       CREATE INDEX idx_notes_updatedAt ON notes(updatedAt DESC)
+    ''');
+  }
+
+  /// Migration 2: Add title column to notes table
+  static Future<void> _migration2(Database db) async {
+    // Add title column with default empty string
+    await db.execute('''
+      ALTER TABLE notes ADD COLUMN title TEXT NOT NULL DEFAULT ''
     ''');
   }
 }

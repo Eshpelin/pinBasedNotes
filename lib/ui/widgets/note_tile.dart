@@ -53,7 +53,7 @@ class NoteTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(
-          note.title,
+          note.displayTitle,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

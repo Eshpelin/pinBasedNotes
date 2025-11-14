@@ -29,6 +29,9 @@ dependencies:
   intl: ^0.19.0
   image_picker: ^1.1.2
 
+  # Machine Learning
+  tflite_flutter: ^0.10.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

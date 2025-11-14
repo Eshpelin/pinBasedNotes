@@ -55,19 +55,21 @@ class NotesRepository {
     }
   }
 
-  /// Update a note's content
+  /// Update a note's title and/or content
   ///
   /// This is called by the auto-save mechanism (300ms debounce)
-  /// Updates both content and updatedAt timestamp
-  Future<void> updateNote(String id, String content) async {
+  /// Updates title, content, and updatedAt timestamp
+  Future<void> updateNote(String id, {String? title, String? content}) async {
     try {
       final updatedAt = DateTime.now().millisecondsSinceEpoch;
+      final Map<String, dynamic> updates = {'updatedAt': updatedAt};
+
+      if (title != null) updates['title'] = title;
+      if (content != null) updates['content'] = content;
+
       final rowsAffected = await _db.update(
         'notes',
-        {
-          'content': content,
-          'updatedAt': updatedAt,
-        },
+        updates,
         where: 'id = ?',
         whereArgs: [id],
       );
