@@ -71,117 +71,117 @@ class PinEntryScreen extends HookConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-
-              // App Title
-              const Icon(
-                Icons.lock_outline,
-                size: 64,
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'PIN Notes',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Title
+                const Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: Colors.blue,
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Enter your PIN to access your vault',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-
-              // PIN Display
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: errorMessage.value != null ? Colors.red : Colors.grey.shade300,
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  pin.value.isEmpty ? 'Enter PIN' : '•' * pin.value.length,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: pin.value.isEmpty ? Colors.grey : Colors.black,
-                    letterSpacing: 8,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // PIN Length Indicator
-              Text(
-                '${pin.value.length}/10 digits',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
-
-              // Error Message
-              if (errorMessage.value != null) ...[
                 const SizedBox(height: 16),
+                const Text(
+                  'PIN Notes',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Enter your PIN to access your vault',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 48),
+
+                // PIN Display
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: errorMessage.value != null ? Colors.red : Colors.grey.shade300,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          errorMessage.value!,
-                          style: const TextStyle(color: Colors.red),
+                  child: Text(
+                    pin.value.isEmpty ? 'Enter PIN' : '•' * pin.value.length,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: pin.value.isEmpty ? Colors.grey : Colors.black,
+                      letterSpacing: 8,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // PIN Length Indicator
+                Text(
+                  '${pin.value.length}/10 digits',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+
+                // Error Message
+                if (errorMessage.value != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage.value!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ],
+
+                const SizedBox(height: 48),
+
+                // Numeric Keypad
+                _NumericKeypad(
+                  onNumberPressed: onNumberPressed,
+                  onBackspace: onBackspace,
+                  onClear: onClear,
+                  onEnter: onEnter,
+                  isEnterEnabled: isPinValid && !isLoading.value,
+                  isLoading: isLoading.value,
+                ),
+
+                const SizedBox(height: 32),
+
+                // Info Text
+                const Text(
+                  'Each PIN creates a separate encrypted vault.\nForgetting your PIN means losing access forever.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
-
-              const SizedBox(height: 48),
-
-              // Numeric Keypad
-              _NumericKeypad(
-                onNumberPressed: onNumberPressed,
-                onBackspace: onBackspace,
-                onClear: onClear,
-                onEnter: onEnter,
-                isEnterEnabled: isPinValid && !isLoading.value,
-                isLoading: isLoading.value,
-              ),
-
-              const Spacer(),
-
-              // Info Text
-              const Text(
-                'Each PIN creates a separate encrypted vault.\nForgetting your PIN means losing access forever.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
         ),
       ),
