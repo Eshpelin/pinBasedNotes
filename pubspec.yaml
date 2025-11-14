@@ -1,0 +1,32 @@
+name: pin_notes
+description: PIN-based encrypted local notes app with SQLCipher
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  hooks_riverpod: ^2.5.2
+  flutter_hooks: ^0.20.5
+
+  # Database & Encryption
+  sqflite_sqlcipher: ^3.1.1
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
