@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'providers/lifecycle_provider.dart';
 import 'providers/pin_provider.dart';
 import 'ui/screens/pin_entry_screen.dart';
@@ -37,6 +38,10 @@ class PinNotesApp extends ConsumerWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
+      localizationsDelegates: const [
+        ...FlutterQuillLocalizations.localizationsDelegates,
+      ],
+      supportedLocales: FlutterQuillLocalizations.supportedLocales,
       // Show notes list if PIN is set, otherwise show PIN entry
       home: pin != null ? const NotesListScreen() : const PinEntryScreen(),
     );

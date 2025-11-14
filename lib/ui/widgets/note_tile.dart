@@ -61,15 +61,36 @@ class NoteTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            'Last edited ${DateFormatter.formatTimestamp(note.updatedAt)}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Show preview of note content
+            if (note.plainText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Text(
+                  note.preview,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            // Last edited timestamp
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'Last edited ${DateFormatter.formatTimestamp(note.updatedAt)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline, color: Colors.grey),

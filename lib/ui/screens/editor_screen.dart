@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:dart_quill_delta/dart_quill_delta.dart';
 import '../../providers/notes_providers.dart';
 import '../../utils/debounce.dart';
 import '../../utils/date_format.dart';
@@ -13,7 +16,10 @@ class EditorScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noteAsync = ref.watch(noteProvider(noteId));
-    final controller = useTextEditingController();
+    final controller = useMemoized(() => QuillController.basic());
+    final focusNode = useFocusNode();
+    final scrollController = useScrollController();
+
     final debouncer = useMemoized(
       () => Debouncer(duration: const Duration(milliseconds: 300)),
     );
@@ -21,18 +27,30 @@ class EditorScreen extends HookConsumerWidget {
     final lastSaved = useState<int?>(null);
     final hasUnsavedChanges = useState(false);
 
-    // Dispose debouncer when widget is disposed
+    // Dispose resources when widget is disposed
     useEffect(() {
-      return () => debouncer.dispose();
+      return () {
+        debouncer.dispose();
+        controller.dispose();
+      };
     }, []);
 
     // Load note content into controller
     useEffect(() {
       noteAsync.whenData((note) {
-        if (note != null && controller.text != note.content) {
-          controller.text = note.content;
-          lastSaved.value = note.updatedAt;
-          hasUnsavedChanges.value = false;
+        if (note != null) {
+          try {
+            final delta = Delta.fromJson(jsonDecode(note.content) as List);
+            // Only update if content has changed to avoid cursor jumping
+            if (controller.document.toDelta() != delta) {
+              controller.document = Document.fromDelta(delta);
+            }
+            lastSaved.value = note.updatedAt;
+            hasUnsavedChanges.value = false;
+          } catch (e) {
+            // If JSON parsing fails, treat as plain text
+            controller.document = Document()..insert(0, note.content);
+          }
         }
       });
       return null;
@@ -45,8 +63,11 @@ class EditorScreen extends HookConsumerWidget {
       debouncer(() async {
         isSaving.value = true;
         try {
+          final delta = controller.document.toDelta();
+          final deltaJson = jsonEncode(delta.toJson());
+
           final notifier = ref.read(notesNotifierProvider.notifier);
-          await notifier.updateNote(noteId, controller.text);
+          await notifier.updateNote(noteId, deltaJson);
           lastSaved.value = DateTime.now().millisecondsSinceEpoch;
           hasUnsavedChanges.value = false;
         } catch (e) {
@@ -61,15 +82,15 @@ class EditorScreen extends HookConsumerWidget {
       });
     }
 
-    // Listen to text changes
+    // Listen to document changes
     useEffect(() {
       void listener() {
         hasUnsavedChanges.value = true;
         saveNote();
       }
 
-      controller.addListener(listener);
-      return () => controller.removeListener(listener);
+      controller.document.changes.listen((_) => listener());
+      return null;
     }, [controller]);
 
     return PopScope(
@@ -80,8 +101,10 @@ class EditorScreen extends HookConsumerWidget {
           debouncer.cancel();
           isSaving.value = true;
           try {
+            final delta = controller.document.toDelta();
+            final deltaJson = jsonEncode(delta.toJson());
             final notifier = ref.read(notesNotifierProvider.notifier);
-            await notifier.updateNote(noteId, controller.text);
+            await notifier.updateNote(noteId, deltaJson);
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -146,26 +169,55 @@ class EditorScreen extends HookConsumerWidget {
               );
             }
 
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: controller,
-                maxLines: null,
-                expands: true,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'Start typing...',
-                  hintStyle: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
+            return Column(
+              children: [
+                // Rich text toolbar
+                QuillSimpleToolbar(
+                  controller: controller,
+                  config: const QuillSimpleToolbarConfig(
+                    showAlignmentButtons: true,
+                    showBackgroundColorButton: false,
+                    showClearFormat: true,
+                    showCodeBlock: true,
+                    showFontFamily: false,
+                    showFontSize: false,
+                    showHeaderStyle: true,
+                    showInlineCode: false,
+                    showLink: false,
+                    showListBullets: true,
+                    showListCheck: false,
+                    showListNumbers: true,
+                    showQuote: true,
+                    showRedo: true,
+                    showSearchButton: false,
+                    showSmallButton: false,
+                    showStrikeThrough: true,
+                    showSubscript: false,
+                    showSuperscript: false,
+                    showUnderLineButton: true,
+                    showUndo: true,
                   ),
                 ),
-                style: const TextStyle(
-                  fontSize: 18,
-                  height: 1.5,
+                const Divider(height: 1, thickness: 1),
+                // Rich text editor
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16.0),
+                    child: QuillEditor.basic(
+                      controller: controller,
+                      focusNode: focusNode,
+                      scrollController: scrollController,
+                      config: const QuillEditorConfig(
+                        padding: EdgeInsets.zero,
+                        scrollable: true,
+                        autoFocus: false,
+                        expands: false,
+                        placeholder: 'Start typing...',
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),

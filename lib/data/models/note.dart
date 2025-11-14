@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:dart_quill_delta/dart_quill_delta.dart';
 
 class Note {
   final String id;
-  final String content;
+  final String content; // Stores Quill Delta JSON
   final int createdAt;
   final int updatedAt;
 
@@ -16,9 +19,16 @@ class Note {
   /// Create a new note with a generated UUID and current timestamps
   factory Note.create({String content = ''}) {
     final now = DateTime.now().millisecondsSinceEpoch;
+    // Create empty Quill document if no content provided
+    final deltaJson = content.isEmpty
+        ? jsonEncode([
+            {'insert': '\n'}
+          ])
+        : content;
+
     return Note(
       id: const Uuid().v4(),
-      content: content,
+      content: deltaJson,
       createdAt: now,
       updatedAt: now,
     );
@@ -44,11 +54,46 @@ class Note {
     };
   }
 
+  /// Get Quill Document from the stored Delta JSON
+  Document get document {
+    try {
+      final delta = Delta.fromJson(jsonDecode(content) as List);
+      return Document.fromDelta(delta);
+    } catch (e) {
+      // If parsing fails, treat as plain text and create a new document
+      return Document()..insert(0, content);
+    }
+  }
+
+  /// Get plain text content from the Quill document
+  String get plainText {
+    try {
+      final doc = document;
+      return doc.toPlainText().trim();
+    } catch (e) {
+      return content;
+    }
+  }
+
   /// Get the first line of content as the title
   String get title {
-    if (content.isEmpty) return 'Untitled';
-    final firstLine = content.split('\n').first.trim();
+    final text = plainText;
+    if (text.isEmpty) return 'Untitled';
+    final firstLine = text.split('\n').first.trim();
     return firstLine.isEmpty ? 'Untitled' : firstLine;
+  }
+
+  /// Get preview text (first few lines)
+  String get preview {
+    final text = plainText;
+    if (text.isEmpty) return 'No content';
+
+    // Get first 3 lines or 150 characters, whichever is shorter
+    final lines = text.split('\n').take(3).join('\n');
+    if (lines.length > 150) {
+      return '${lines.substring(0, 150)}...';
+    }
+    return lines;
   }
 
   /// Create a copy with updated fields
