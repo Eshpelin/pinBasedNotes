@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../data/db/vault_manager.dart';
 import '../../providers/pin_provider.dart';
 import 'notes_list_screen.dart';
+import 'rate_limit_error_screen.dart';
 
 class PinEntryScreen extends HookConsumerWidget {
   const PinEntryScreen({super.key});
@@ -53,6 +54,15 @@ class PinEntryScreen extends HookConsumerWidget {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const NotesListScreen(),
+            ),
+          );
+        }
+      } on RateLimitExceededException catch (_) {
+        // Navigate to rate limit error screen
+        if (context.mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const RateLimitErrorScreen(),
             ),
           );
         }
