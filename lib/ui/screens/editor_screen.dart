@@ -26,6 +26,7 @@ class EditorScreen extends HookConsumerWidget {
     final isSaving = useState(false);
     final lastSaved = useState<int?>(null);
     final hasUnsavedChanges = useState(false);
+    final isInitialLoad = useState(true);
 
     // Dispose resources when widget is disposed
     useEffect(() {
@@ -41,15 +42,29 @@ class EditorScreen extends HookConsumerWidget {
         if (note != null) {
           try {
             final delta = Delta.fromJson(jsonDecode(note.content) as List);
-            // Only update if content has changed to avoid cursor jumping
-            if (controller.document.toDelta() != delta) {
+            // Only update on initial load to avoid cursor jumping during editing
+            if (isInitialLoad.value) {
               controller.document = Document.fromDelta(delta);
+              lastSaved.value = note.updatedAt;
+              hasUnsavedChanges.value = false;
+              isInitialLoad.value = false;
+            } else if (!hasUnsavedChanges.value) {
+              // Only update if there are no unsaved changes (e.g., external update)
+              // Save cursor position before update
+              final selection = controller.selection;
+              controller.document = Document.fromDelta(delta);
+              // Restore cursor position if valid
+              if (selection.isValid && selection.end <= controller.document.length) {
+                controller.updateSelection(selection, ChangeSource.local);
+              }
+              lastSaved.value = note.updatedAt;
             }
-            lastSaved.value = note.updatedAt;
-            hasUnsavedChanges.value = false;
           } catch (e) {
             // If JSON parsing fails, treat as plain text
-            controller.document = Document()..insert(0, note.content);
+            if (isInitialLoad.value) {
+              controller.document = Document()..insert(0, note.content);
+              isInitialLoad.value = false;
+            }
           }
         }
       });
@@ -89,8 +104,8 @@ class EditorScreen extends HookConsumerWidget {
         saveNote();
       }
 
-      controller.document.changes.listen((_) => listener());
-      return null;
+      final subscription = controller.document.changes.listen((_) => listener());
+      return subscription.cancel;
     }, [controller]);
 
     return PopScope(
