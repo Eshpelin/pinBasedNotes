@@ -79,6 +79,12 @@ class VaultManager {
       // This will fail if the PIN is incorrect for an existing database
       try {
         await database.rawQuery('SELECT 1');
+
+        // If this is a NEW vault (didn't exist before), log the attempt
+        // This enforces the rate limit on vault creation
+        if (!dbExists) {
+          await MetaDbManager.logPinAttempt(pin);
+        }
       } catch (e) {
         await database.close();
         if (dbExists) {
