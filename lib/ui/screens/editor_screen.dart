@@ -169,25 +169,27 @@ class EditorScreen extends HookConsumerWidget {
     }
 
     // Listen to document changes
+    // Note: We need to set this up AFTER the document is loaded to ensure
+    // we're listening to the correct document instance
     useEffect(() {
+      // Wait for initial load to complete before setting up listener
+      if (isInitialLoad.value) {
+        return null;
+      }
+
       void listener() {
         print('=== DOCUMENT CHANGE DETECTED ===');
         print('isInitialLoad: ${isInitialLoad.value}');
-
-        // Don't trigger save during initial load
-        if (isInitialLoad.value) {
-          print('Ignoring change during initial load');
-          return;
-        }
 
         print('Marking as unsaved and triggering save');
         hasUnsavedChanges.value = true;
         saveNote();
       }
 
+      print('Setting up document changes listener');
       final subscription = controller.document.changes.listen((_) => listener());
       return subscription.cancel;
-    }, [controller]);
+    }, [controller, isInitialLoad.value]);
 
     // Image insertion methods
     Future<void> insertImage(ImageSource source) async {
