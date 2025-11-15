@@ -138,6 +138,9 @@ class EditorScreen extends HookConsumerWidget {
     // Listen to document changes
     useEffect(() {
       void listener() {
+        // Don't trigger save during initial load
+        if (isInitialLoad.value) return;
+
         hasUnsavedChanges.value = true;
         saveNote();
       }
