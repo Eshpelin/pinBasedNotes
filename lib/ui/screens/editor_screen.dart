@@ -232,7 +232,12 @@ class EditorScreen extends HookConsumerWidget {
     Future<void> insertImage(ImageSource source) async {
       try {
         // Set flag to prevent vault from locking while image picker is open
-        ref.read(isSystemUiOpenProvider.notifier).state = true;
+        try {
+          ref.read(isSystemUiOpenProvider.notifier).state = true;
+        } catch (e) {
+          // If ref is no longer valid, continue anyway - vault locking is a secondary concern
+          print('Warning: Could not set system UI flag: $e');
+        }
 
         final ImagePicker picker = ImagePicker();
         final XFile? image = await picker.pickImage(
@@ -244,7 +249,12 @@ class EditorScreen extends HookConsumerWidget {
 
         // Clear flag now that image picker is closed (check if still mounted first)
         if (context.mounted) {
-          ref.read(isSystemUiOpenProvider.notifier).state = false;
+          try {
+            ref.read(isSystemUiOpenProvider.notifier).state = false;
+          } catch (e) {
+            // Silently ignore if ref is no longer valid
+            print('Warning: Could not clear system UI flag: $e');
+          }
         }
 
         if (image == null) return;
@@ -278,7 +288,12 @@ class EditorScreen extends HookConsumerWidget {
       } catch (e) {
         // Make sure to clear flag even if there's an error (check if still mounted first)
         if (context.mounted) {
-          ref.read(isSystemUiOpenProvider.notifier).state = false;
+          try {
+            ref.read(isSystemUiOpenProvider.notifier).state = false;
+          } catch (e) {
+            // Silently ignore if ref is no longer valid
+            print('Warning: Could not clear system UI flag in error handler: $e');
+          }
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to insert image: $e')),
