@@ -46,15 +46,28 @@ class EditorScreen extends HookConsumerWidget {
     useEffect(() {
       noteAsync.whenData((note) {
         if (note != null) {
+          print('=== LOADING NOTE ===');
+          print('Note ID: ${note.id}');
+          print('Title: ${note.title}');
+          print('Content length: ${note.content.length}');
+          print('Content: ${note.content}');
+          print('isInitialLoad: ${isInitialLoad.value}');
+          print('hasUnsavedChanges: ${hasUnsavedChanges.value}');
+
           try {
             final delta = Delta.fromJson(jsonDecode(note.content) as List);
+            print('Delta parsed successfully, ops count: ${delta.length}');
+
             // Only update on initial load to avoid cursor jumping during editing
             if (isInitialLoad.value) {
+              print('Setting document on initial load');
               controller.document = Document.fromDelta(delta);
               titleController.text = note.title;
 
               // Check if title appears to be auto-generated using ML
               final plainText = controller.document.toPlainText().trim();
+              print('Plain text after load: $plainText');
+
               // If title is empty or looks auto-generated, allow ML to regenerate
               isTitleManuallyEdited.value = note.title.isNotEmpty &&
                   !plainText.toLowerCase().startsWith(note.title.toLowerCase());
@@ -62,7 +75,9 @@ class EditorScreen extends HookConsumerWidget {
               lastSaved.value = note.updatedAt;
               hasUnsavedChanges.value = false;
               isInitialLoad.value = false;
+              print('Initial load complete');
             } else if (!hasUnsavedChanges.value) {
+              print('Updating document (not initial load, no unsaved changes)');
               // Only update if there are no unsaved changes (e.g., external update)
               // Save cursor position before update
               final selection = controller.selection;
@@ -73,15 +88,22 @@ class EditorScreen extends HookConsumerWidget {
                 controller.updateSelection(selection, ChangeSource.local);
               }
               lastSaved.value = note.updatedAt;
+              print('Update complete');
+            } else {
+              print('Skipping load: hasUnsavedChanges=true');
             }
           } catch (e) {
+            print('ERROR parsing delta: $e');
             // If JSON parsing fails, treat as plain text
             if (isInitialLoad.value) {
+              print('Falling back to plain text insert');
               controller.document = Document()..insert(0, note.content);
               titleController.text = note.title;
               isInitialLoad.value = false;
             }
           }
+        } else {
+          print('=== NOTE IS NULL ===');
         }
       });
       return null;
@@ -97,10 +119,18 @@ class EditorScreen extends HookConsumerWidget {
           final delta = controller.document.toDelta();
           final deltaJson = jsonEncode(delta.toJson());
 
+          // DEBUG: Log what we're about to save
+          final plainText = controller.document.toPlainText().trim();
+          print('=== SAVING NOTE ===');
+          print('Note ID: $noteId');
+          print('Plain text length: ${plainText.length}');
+          print('Plain text preview: ${plainText.substring(0, plainText.length > 50 ? 50 : plainText.length)}');
+          print('Delta JSON length: ${deltaJson.length}');
+          print('Delta JSON: $deltaJson');
+
           // Auto-generate title using ML if it hasn't been manually edited
           String titleToSave = titleController.text;
           if (!isTitleManuallyEdited.value || forceTitleUpdate) {
-            final plainText = controller.document.toPlainText().trim();
             final (generated, isGibberish) = MLTitleGenerator.generateTitle(plainText);
             if (generated.isNotEmpty) {
               titleToSave = generated;
@@ -119,11 +149,14 @@ class EditorScreen extends HookConsumerWidget {
             }
           }
 
+          print('Title to save: $titleToSave');
           final notifier = ref.read(notesNotifierProvider.notifier);
           await notifier.updateNote(noteId, title: titleToSave, content: deltaJson);
+          print('Save completed successfully');
           lastSaved.value = DateTime.now().millisecondsSinceEpoch;
           hasUnsavedChanges.value = false;
         } catch (e) {
+          print('ERROR SAVING: $e');
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to save: $e')),
@@ -138,9 +171,16 @@ class EditorScreen extends HookConsumerWidget {
     // Listen to document changes
     useEffect(() {
       void listener() {
-        // Don't trigger save during initial load
-        if (isInitialLoad.value) return;
+        print('=== DOCUMENT CHANGE DETECTED ===');
+        print('isInitialLoad: ${isInitialLoad.value}');
 
+        // Don't trigger save during initial load
+        if (isInitialLoad.value) {
+          print('Ignoring change during initial load');
+          return;
+        }
+
+        print('Marking as unsaved and triggering save');
         hasUnsavedChanges.value = true;
         saveNote();
       }
@@ -341,8 +381,9 @@ class EditorScreen extends HookConsumerWidget {
                       if (value.isNotEmpty) {
                         isTitleManuallyEdited.value = true;
                       }
+                      // Set unsaved changes flag but DON'T call saveNote()
+                      // The title will be saved when the content changes or when navigating away
                       hasUnsavedChanges.value = true;
-                      saveNote();
                     },
                   ),
                 ),
