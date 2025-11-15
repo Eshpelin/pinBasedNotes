@@ -19,8 +19,9 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
     ref.read(appLifecycleProvider.notifier).state = state;
 
     // Lock vault when app goes to background
+    // Note: Don't lock on 'inactive' state - this happens when system dialogs appear
+    // or when the image picker is opened. Only lock when truly backgrounded.
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       // Clear the PIN to lock the vault
       // This will trigger the database to close via the vaultDbProvider's onDispose
