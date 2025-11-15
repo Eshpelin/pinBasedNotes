@@ -269,6 +269,9 @@ class NotesListScreen extends HookConsumerWidget {
 
       if (source == null) return;
 
+      // Check if still mounted after bottom sheet
+      if (!context.mounted) return;
+
       // Set flag to prevent vault from locking while image picker is open
       ref.read(isSystemUiOpenProvider.notifier).state = true;
 
@@ -280,10 +283,15 @@ class NotesListScreen extends HookConsumerWidget {
         imageQuality: 85,
       );
 
-      // Clear flag now that image picker is closed
-      ref.read(isSystemUiOpenProvider.notifier).state = false;
+      // Clear flag now that image picker is closed (check if still mounted first)
+      if (context.mounted) {
+        ref.read(isSystemUiOpenProvider.notifier).state = false;
+      }
 
       if (image == null) return;
+
+      // Check if still mounted before creating note
+      if (!context.mounted) return;
 
       // Create note with image
       final notifier = ref.read(notesNotifierProvider.notifier);
@@ -304,10 +312,10 @@ class NotesListScreen extends HookConsumerWidget {
         );
       }
     } catch (e) {
-      // Make sure to clear flag even if there's an error
-      ref.read(isSystemUiOpenProvider.notifier).state = false;
-
+      // Make sure to clear flag even if there's an error (check if still mounted first)
       if (context.mounted) {
+        ref.read(isSystemUiOpenProvider.notifier).state = false;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to create image note: $e')),
         );

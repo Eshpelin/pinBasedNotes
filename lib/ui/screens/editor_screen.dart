@@ -242,10 +242,15 @@ class EditorScreen extends HookConsumerWidget {
           imageQuality: 85,
         );
 
-        // Clear flag now that image picker is closed
-        ref.read(isSystemUiOpenProvider.notifier).state = false;
+        // Clear flag now that image picker is closed (check if still mounted first)
+        if (context.mounted) {
+          ref.read(isSystemUiOpenProvider.notifier).state = false;
+        }
 
         if (image == null) return;
+
+        // Check if widget is still mounted before proceeding
+        if (!context.mounted) return;
 
         // Read image as bytes and convert to base64
         final bytes = await File(image.path).readAsBytes();
@@ -271,10 +276,10 @@ class EditorScreen extends HookConsumerWidget {
         hasUnsavedChanges.value = true;
         saveNote();
       } catch (e) {
-        // Make sure to clear flag even if there's an error
-        ref.read(isSystemUiOpenProvider.notifier).state = false;
-
+        // Make sure to clear flag even if there's an error (check if still mounted first)
         if (context.mounted) {
+          ref.read(isSystemUiOpenProvider.notifier).state = false;
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to insert image: $e')),
           );
