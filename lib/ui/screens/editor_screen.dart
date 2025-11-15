@@ -392,6 +392,7 @@ class EditorScreen extends HookConsumerWidget {
                       hintText: 'Note Title',
                       border: InputBorder.none,
                       isDense: true,
+                      filled: false,
                     ),
                     maxLines: null,
                     onChanged: (value) {
