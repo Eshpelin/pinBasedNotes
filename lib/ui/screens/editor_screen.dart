@@ -168,7 +168,10 @@ class EditorScreen extends HookConsumerWidget {
         final index = controller.selection.baseOffset;
         final length = controller.selection.extentOffset - index;
 
-        controller.document.delete(index, length);
+        // Only delete if there's a selection
+        if (length > 0) {
+          controller.document.delete(index, length);
+        }
         controller.document.insert(index, BlockEmbed.image(dataUrl));
 
         // Move cursor after the image
