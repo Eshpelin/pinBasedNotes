@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../data/db/vault_manager.dart';
 import '../../data/models/note.dart';
 import '../../providers/notes_providers.dart';
@@ -8,13 +9,15 @@ import '../widgets/note_tile.dart';
 import 'editor_screen.dart';
 import 'pin_entry_screen.dart';
 
-class NotesListScreen extends ConsumerWidget {
+class NotesListScreen extends HookConsumerWidget {
   const NotesListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notesAsync = ref.watch(notesListProvider);
     final pin = ref.watch(pinProvider);
+    final searchQuery = useState('');
+    final searchController = useTextEditingController();
 
     return Scaffold(
       appBar: AppBar(
@@ -57,23 +60,86 @@ class NotesListScreen extends ConsumerWidget {
       ),
       body: notesAsync.when(
         data: (notes) {
-          if (notes.isEmpty) {
-            return _EmptyState(
-              onCreateNote: () => _createNote(context, ref),
-            );
-          }
+          // Filter notes based on search query
+          final filteredNotes = searchQuery.value.isEmpty
+              ? notes
+              : notes.where((note) {
+                  final query = searchQuery.value.toLowerCase();
+                  final titleMatch = note.title.toLowerCase().contains(query);
+                  final contentMatch = note.plainText.toLowerCase().contains(query);
+                  return titleMatch || contentMatch;
+                }).toList();
 
-          return ListView.builder(
-            itemCount: notes.length,
-            itemBuilder: (context, index) {
-              final note = notes[index];
-              return NoteTile(
-                note: note,
-                onTap: () => _openEditor(context, note.id),
-                onDelete: () => _deleteNote(context, ref, note),
-                onDeleteConfirmed: () => _deleteNoteConfirmed(context, ref, note),
-              );
-            },
+          return Column(
+            children: [
+              // Search bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search notes...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: searchQuery.value.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              searchController.clear();
+                              searchQuery.value = '';
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onChanged: (value) => searchQuery.value = value,
+                ),
+              ),
+
+              // Notes list or empty state
+              Expanded(
+                child: filteredNotes.isEmpty
+                    ? searchQuery.value.isNotEmpty
+                        ? _NoSearchResults(searchQuery: searchQuery.value)
+                        : _EmptyState(onCreateNote: () => _createNote(context, ref))
+                    : ListView.builder(
+                        itemCount: filteredNotes.length,
+                        itemBuilder: (context, index) {
+                          final note = filteredNotes[index];
+                          return NoteTile(
+                            note: note,
+                            onTap: () => _openEditor(context, note.id),
+                            onDelete: () => _deleteNote(context, ref, note),
+                            onDeleteConfirmed: () => _deleteNoteConfirmed(context, ref, note),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -311,6 +377,57 @@ class _EmptyState extends StatelessWidget {
             label: const Text('Create Note'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoSearchResults extends StatelessWidget {
+  final String searchQuery;
+
+  const _NoSearchResults({required this.searchQuery});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 96,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No results found',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'No notes match "$searchQuery"',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Try a different search term',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade400,
             ),
           ),
         ],
