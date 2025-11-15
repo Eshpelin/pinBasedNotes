@@ -36,7 +36,8 @@ final notesCountProvider = FutureProvider.autoDispose<int>((ref) async {
 });
 
 /// Notifier for managing note operations
-class NotesNotifier extends AutoDisposeAsyncNotifier<void> {
+/// Not using AutoDispose to prevent disposal during navigation
+class NotesNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {
     // No initial state needed
@@ -69,7 +70,8 @@ class NotesNotifier extends AutoDisposeAsyncNotifier<void> {
 }
 
 /// Provider for the NotesNotifier
+/// Not using AutoDispose to prevent disposal during navigation
 final notesNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<NotesNotifier, void>(() {
+    AsyncNotifierProvider<NotesNotifier, void>(() {
   return NotesNotifier();
 });
