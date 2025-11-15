@@ -371,18 +371,21 @@ class EditorScreen extends HookConsumerWidget {
               );
             }
 
-            return Column(
+            return Stack(
               children: [
-                // Title TextField
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                    ),
-                  ),
-                  child: TextField(
+                // Main content
+                Column(
+                  children: [
+                    // Title TextField
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                        ),
+                      ),
+                      child: TextField(
                     controller: titleController,
                     style: const TextStyle(
                       fontSize: 24,
@@ -439,35 +442,6 @@ class EditorScreen extends HookConsumerWidget {
                   const Divider(height: 1, thickness: 1),
                 ],
 
-                // Custom image/camera toolbar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: Colors.grey.shade100,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.photo_library, size: 20),
-                        tooltip: 'Insert from Gallery',
-                        onPressed: () => insertImage(ImageSource.gallery),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 20),
-                        tooltip: 'Take Photo',
-                        onPressed: () => insertImage(ImageSource.camera),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Insert Image',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, thickness: 1),
-
                 // Rich text editor - scrollable independently
                 Expanded(
                   child: Container(
@@ -482,6 +456,103 @@ class EditorScreen extends HookConsumerWidget {
                         autoFocus: false,
                         expands: true,
                         placeholder: 'Start typing...',
+                      ),
+                      ),
+                    ),
+                  ),
+                  ],
+                ),
+
+                // Floating bottom menu
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(28),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Insert Image button
+                            FilledButton.tonalIcon(
+                              onPressed: () async {
+                                // Show bottom sheet to choose between gallery and camera
+                                final source = await showModalBottomSheet<ImageSource>(
+                                  context: context,
+                                  builder: (context) => SafeArea(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(Icons.photo_library),
+                                          title: const Text('Choose from Gallery'),
+                                          onTap: () => Navigator.pop(context, ImageSource.gallery),
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(Icons.camera_alt),
+                                          title: const Text('Take Photo'),
+                                          onTap: () => Navigator.pop(context, ImageSource.camera),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                if (source != null) {
+                                  insertImage(source);
+                                }
+                              },
+                              icon: const Icon(Icons.image, size: 20),
+                              label: const Text('Insert Image'),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Paste Text button
+                            FilledButton.tonalIcon(
+                              onPressed: () async {
+                                final clipboardData = await Clipboard.getData('text/plain');
+                                if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+                                  final index = controller.selection.baseOffset;
+                                  controller.document.insert(index, clipboardData.text!);
+                                  hasUnsavedChanges.value = true;
+                                  saveNote();
+
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Text pasted'),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Clipboard is empty'),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.content_paste, size: 20),
+                              label: const Text('Paste Text'),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
