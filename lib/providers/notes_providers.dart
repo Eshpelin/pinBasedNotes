@@ -4,7 +4,9 @@ import '../data/repositories/notes_repository.dart';
 import 'db_provider.dart';
 
 /// Provider for the NotesRepository
-final notesRepositoryProvider = Provider.autoDispose<NotesRepository>((ref) {
+/// Not using autoDispose to prevent disposal during navigation
+/// which could interrupt pending save operations
+final notesRepositoryProvider = Provider<NotesRepository>((ref) {
   final dbAsync = ref.watch(vaultDbProvider);
 
   return dbAsync.when(
