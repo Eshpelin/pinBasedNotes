@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'providers/lifecycle_provider.dart';
@@ -39,6 +40,9 @@ class PinNotesApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
         ...FlutterQuillLocalizations.localizationsDelegates,
       ],
       supportedLocales: FlutterQuillLocalizations.supportedLocales,
