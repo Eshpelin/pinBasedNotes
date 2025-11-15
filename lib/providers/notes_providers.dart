@@ -56,9 +56,10 @@ class NotesNotifier extends AsyncNotifier<void> {
   /// Update a note's title and/or content
   Future<void> updateNote(String id, {String? title, String? content}) async {
     await _repository.updateNote(id, title: title, content: content);
-    // Invalidate providers to trigger refresh
+    // Invalidate the notes list to trigger a refresh
+    // DON'T invalidate noteProvider(id) - it causes unnecessary reload during editing
+    // which replaces the document and breaks the change listener
     ref.invalidate(notesListProvider);
-    ref.invalidate(noteProvider(id));
   }
 
   /// Delete a note
