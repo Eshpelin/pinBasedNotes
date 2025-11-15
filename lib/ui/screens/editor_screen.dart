@@ -131,7 +131,8 @@ class EditorScreen extends HookConsumerWidget {
           // Auto-generate title using ML if it hasn't been manually edited
           String titleToSave = titleController.text;
           if (!isTitleManuallyEdited.value || forceTitleUpdate) {
-            final (generated, isGibberish) = MLTitleGenerator.generateTitle(plainText);
+            // Use async ML Kit GenAI (Gemini Nano) with automatic fallback to keyword extraction
+            final (generated, isGibberish) = await MLTitleGenerator.generateTitleAsync(plainText);
             if (generated.isNotEmpty) {
               titleToSave = generated;
               titleController.text = titleToSave;
@@ -251,7 +252,8 @@ class EditorScreen extends HookConsumerWidget {
             String titleToSave = titleController.text;
             if (!isTitleManuallyEdited.value) {
               final plainText = controller.document.toPlainText().trim();
-              final (generated, _) = MLTitleGenerator.generateTitle(plainText);
+              // Use async ML Kit GenAI (Gemini Nano) with automatic fallback
+              final (generated, _) = await MLTitleGenerator.generateTitleAsync(plainText);
               if (generated.isNotEmpty) {
                 titleToSave = generated;
               }

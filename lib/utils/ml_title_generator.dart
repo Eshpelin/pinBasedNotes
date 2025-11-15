@@ -1,9 +1,42 @@
 import 'dart:math';
+import '../services/ml_summarization_service.dart';
 
 /// ML-powered title generator using statistical analysis and smart algorithms
-/// This lightweight approach uses ML principles without requiring large models
+/// Now with TRUE AI support via ML Kit GenAI (Gemini Nano) on Android devices!
+///
+/// Hierarchy:
+/// 1. Try ML Kit GenAI (Gemini Nano) - Best quality, on-device AI
+/// 2. Fall back to keyword extraction - Fast, works on all platforms
 class MLTitleGenerator {
   static final Random _random = Random();
+
+  /// Generate title using ML Kit GenAI (Gemini Nano) with automatic fallback
+  ///
+  /// This is the recommended method to use - it will:
+  /// 1. Try ML Kit GenAI on Android devices (true AI summarization)
+  /// 2. Fall back to keyword extraction if ML Kit unavailable or fails
+  ///
+  /// Returns a tuple: (title, isGibberish)
+  static Future<(String, bool)> generateTitleAsync(String plainText) async {
+    if (plainText.trim().isEmpty) {
+      return ('', false);
+    }
+
+    // Try ML Kit GenAI first (Gemini Nano on Android)
+    try {
+      final mlTitle = await MLSummarizationService.summarizeForTitle(plainText);
+      if (mlTitle != null && mlTitle.isNotEmpty) {
+        print('✨ ML Kit GenAI (Gemini Nano) generated title: $mlTitle');
+        return (mlTitle, false);
+      }
+    } catch (e) {
+      print('ML Kit failed, falling back to keyword extraction: $e');
+    }
+
+    // Fall back to keyword extraction
+    print('📝 Using keyword extraction (ML Kit not available)');
+    return generateTitle(plainText);
+  }
 
   /// Funny titles for gibberish content
   static const List<String> _funnyGibberishTitles = [

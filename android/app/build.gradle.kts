@@ -42,3 +42,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // ML Kit GenAI for on-device summarization with Gemini Nano
+    implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")
+}
