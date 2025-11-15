@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../data/models/note.dart';
 import '../../utils/date_format.dart';
 
@@ -92,32 +93,68 @@ class NoteTile extends StatelessWidget {
             ),
           ],
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.grey),
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Delete Note'),
-                content: Text('Delete "${note.title}"?\n\nThis action cannot be undone.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
-            );
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Copy button
+            IconButton(
+              icon: const Icon(Icons.copy, color: Colors.grey),
+              tooltip: 'Copy note',
+              onPressed: () async {
+                // Copy note content to clipboard
+                final textToCopy = note.plainText.isNotEmpty
+                    ? '${note.displayTitle}\n\n${note.plainText}'
+                    : note.displayTitle;
 
-            if (confirmed == true) {
-              onDelete();
-            }
-          },
+                await Clipboard.setData(ClipboardData(text: textToCopy));
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied "${note.displayTitle}" to clipboard'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: 'OK',
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            // Delete button
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.grey),
+              tooltip: 'Delete note',
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Note'),
+                    content: Text('Delete "${note.title}"?\n\nThis action cannot be undone.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed == true) {
+                  onDelete();
+                }
+              },
+            ),
+          ],
         ),
         onTap: onTap,
       ),

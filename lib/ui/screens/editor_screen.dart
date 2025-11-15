@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -244,6 +245,39 @@ class EditorScreen extends HookConsumerWidget {
             ],
           ),
           actions: [
+            // Copy button
+            IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Copy note',
+              onPressed: () async {
+                // Copy note content to clipboard
+                final plainText = controller.document.toPlainText().trim();
+                final title = titleController.text;
+
+                final textToCopy = plainText.isNotEmpty
+                    ? '$title\n\n$plainText'
+                    : title;
+
+                await Clipboard.setData(ClipboardData(text: textToCopy));
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied "${title.isNotEmpty ? title : 'note'}" to clipboard'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: 'OK',
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            // Save status indicator
             if (isSaving.value)
               const Padding(
                 padding: EdgeInsets.all(16.0),
