@@ -291,9 +291,10 @@ class MLTitleGenerator {
       // ML scoring: position, length, word quality
       double score = 0.0;
 
-      // Feature: Position (first sentences more important)
+      // Feature: Position (slight preference for earlier sentences)
+      // Reduced bias to allow later, more substantive sentences to win
       final position = sentences.indexOf(sentence);
-      score += max(0, 10 - position) * 0.5;
+      score += max(0, 3 - position) * 0.2;
 
       // Feature: Length (ideal length is 30-80 chars)
       final length = trimmed.length;
