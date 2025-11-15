@@ -88,10 +88,10 @@ class PinEntryScreen extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // App Title
-                const Icon(
+                Icon(
                   Icons.lock_outline,
                   size: 64,
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -263,21 +263,13 @@ class _NumericKeypad extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: 56,
-          child: ElevatedButton(
+          child: FilledButton(
             onPressed: isEnterEnabled ? onEnter : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              disabledBackgroundColor: Colors.grey.shade300,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
             child: isLoading
                 ? const SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
                       strokeWidth: 2,
                     ),
                   )
@@ -286,7 +278,6 @@ class _NumericKeypad extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
                     ),
                   ),
           ),

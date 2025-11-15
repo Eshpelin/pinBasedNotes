@@ -73,50 +73,30 @@ class NotesListScreen extends HookConsumerWidget {
           return Column(
             children: [
               // Search bar
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: TextField(
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SearchBar(
                   controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search notes...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: searchQuery.value.isNotEmpty
-                        ? IconButton(
+                  hintText: 'Search notes...',
+                  leading: const Icon(Icons.search),
+                  trailing: searchQuery.value.isNotEmpty
+                      ? [
+                          IconButton(
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               searchController.clear();
                               searchQuery.value = '';
                             },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                          ),
+                        ]
+                      : null,
                   onChanged: (value) => searchQuery.value = value,
+                  elevation: const WidgetStatePropertyAll(2),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
 
@@ -178,17 +158,14 @@ class NotesListScreen extends HookConsumerWidget {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: () => _lockVault(context, ref),
               icon: const Icon(Icons.lock_outline),
               label: const Text('Lock Vault'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
                 padding: const EdgeInsets.symmetric(vertical: 14.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
               ),
             ),
           ),
