@@ -55,7 +55,6 @@ class EditorScreen extends HookConsumerWidget {
 
               // Check if title appears to be auto-generated using ML
               final plainText = controller.document.toPlainText().trim();
-              final (_, isGibberish) = MLTitleGenerator.generateTitle(plainText);
               // If title is empty or looks auto-generated, allow ML to regenerate
               isTitleManuallyEdited.value = note.title.isNotEmpty &&
                   !plainText.toLowerCase().startsWith(note.title.toLowerCase());

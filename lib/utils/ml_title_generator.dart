@@ -154,7 +154,7 @@ class MLTitleGenerator {
 
   /// Calculate vowel to total letter ratio
   static double _calculateVowelRatio(String text) {
-    final vowels = 'aeiou';
+    const vowels = 'aeiou';
     int vowelCount = 0;
     int letterCount = 0;
 
@@ -200,7 +200,7 @@ class MLTitleGenerator {
     }
 
     // Check for alternating vowel-consonant pattern
-    final vowels = 'aeiou';
+    const vowels = 'aeiou';
     int alternations = 0;
     bool wasVowel = vowels.contains(word[0]);
 
@@ -231,7 +231,7 @@ class MLTitleGenerator {
 
   /// Find maximum consecutive consonants
   static int _maxConsecutiveConsonants(String text) {
-    final vowels = 'aeiou';
+    const vowels = 'aeiou';
     int maxConsec = 0;
     int current = 0;
 
@@ -257,7 +257,7 @@ class MLTitleGenerator {
       if (cleaned.length < 2) continue;
 
       // Simple heuristic: words with reasonable length and vowel distribution
-      final vowels = 'aeiou';
+      const vowels = 'aeiou';
       final vowelCount = cleaned.split('').where((c) =>
           vowels.contains(c)).length;
       final vowelRatio = vowelCount / cleaned.length;

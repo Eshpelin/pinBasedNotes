@@ -33,7 +33,7 @@ class TitleGenerator {
     final words = firstSentence.split(RegExp(r'\s+'));
 
     // Take first 6-8 words (whichever makes more sense)
-    final maxWords = 8;
+    const maxWords = 8;
     final selectedWords = words.take(maxWords).toList();
 
     // If we stopped mid-sentence and there are more words, try to end at a natural break
