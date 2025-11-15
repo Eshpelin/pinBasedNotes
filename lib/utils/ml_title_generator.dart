@@ -361,19 +361,38 @@ class MLTitleGenerator {
   static String _formatTitle(String title) {
     if (title.isEmpty) return title;
 
+    // Split into words
+    final words = title.split(RegExp(r'\s+'));
+
+    // Limit to maximum 4 words for concise titles
+    const maxWords = 4;
+    if (words.length > maxWords) {
+      // Take first 4 words and remove common filler words if present
+      final selectedWords = <String>[];
+      final fillerWords = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for'};
+
+      for (final word in words) {
+        if (selectedWords.length >= maxWords) break;
+
+        // Skip filler words unless it's the first word or we need it
+        if (selectedWords.isNotEmpty &&
+            fillerWords.contains(word.toLowerCase()) &&
+            selectedWords.length < words.length - 1) {
+          continue;
+        }
+
+        selectedWords.add(word);
+      }
+
+      title = selectedWords.take(maxWords).join(' ');
+    }
+
     // Capitalize first letter
     title = title[0].toUpperCase() + title.substring(1);
 
-    // Limit to 60 characters
-    if (title.length > 60) {
-      // Try to cut at word boundary
-      final words = title.substring(0, 57).split(' ');
-      if (words.length > 1) {
-        words.removeLast();
-        title = '${words.join(' ')}...';
-      } else {
-        title = '${title.substring(0, 57)}...';
-      }
+    // Add ellipsis if we truncated words
+    if (words.length > maxWords) {
+      title = '$title...';
     }
 
     return title;
