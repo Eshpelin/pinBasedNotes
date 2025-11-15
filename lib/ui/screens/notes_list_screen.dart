@@ -324,7 +324,10 @@ class NotesListScreen extends HookConsumerWidget {
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => EditorScreen(noteId: note.id),
+            builder: (context) => EditorScreen(
+              noteId: note.id,
+              initialText: clipboardData.text,
+            ),
           ),
         );
 

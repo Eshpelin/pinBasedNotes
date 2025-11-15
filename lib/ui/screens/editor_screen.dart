@@ -14,8 +14,9 @@ import '../../utils/ml_title_generator.dart';
 
 class EditorScreen extends HookConsumerWidget {
   final String noteId;
+  final String? initialText;
 
-  const EditorScreen({super.key, required this.noteId});
+  const EditorScreen({super.key, required this.noteId, this.initialText});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,6 +35,7 @@ class EditorScreen extends HookConsumerWidget {
     final isInitialLoad = useState(true);
     final isTitleManuallyEdited = useState(false);
     final showToolbar = useState(false);
+    final needsInitialSave = useState(false);
 
     // Dispose resources when widget is disposed
     useEffect(() {
@@ -65,6 +67,14 @@ class EditorScreen extends HookConsumerWidget {
               controller.document = Document.fromDelta(delta);
               titleController.text = note.title;
 
+              // If initial text was provided, insert it
+              if (initialText != null && initialText!.isNotEmpty) {
+                print('Inserting initial text: ${initialText!.substring(0, initialText!.length > 50 ? 50 : initialText!.length)}');
+                controller.document.insert(0, initialText!);
+                hasUnsavedChanges.value = true;
+                needsInitialSave.value = true;
+              }
+
               // Check if title appears to be auto-generated using ML
               final plainText = controller.document.toPlainText().trim();
               print('Plain text after load: $plainText');
@@ -74,7 +84,9 @@ class EditorScreen extends HookConsumerWidget {
                   !plainText.toLowerCase().startsWith(note.title.toLowerCase());
 
               lastSaved.value = note.updatedAt;
-              hasUnsavedChanges.value = false;
+              if (initialText == null || initialText!.isEmpty) {
+                hasUnsavedChanges.value = false;
+              }
               isInitialLoad.value = false;
               print('Initial load complete');
             } else if (!hasUnsavedChanges.value) {
@@ -169,6 +181,16 @@ class EditorScreen extends HookConsumerWidget {
         }
       });
     }
+
+    // Trigger save for initial text if needed
+    useEffect(() {
+      if (needsInitialSave.value && !isInitialLoad.value) {
+        print('Triggering save for initial text');
+        saveNote();
+        needsInitialSave.value = false;
+      }
+      return null;
+    }, [needsInitialSave.value, isInitialLoad.value]);
 
     // Listen to document changes
     // Note: We need to set this up AFTER the document is loaded to ensure
