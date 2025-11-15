@@ -358,117 +358,122 @@ class EditorScreen extends HookConsumerWidget {
               );
             }
 
-            return Column(
-              children: [
-                // Title TextField
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                    ),
-                  ),
-                  child: TextField(
-                    controller: titleController,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Note Title',
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    onChanged: (value) {
-                      // Only mark as manually edited if user is typing (not during save)
-                      // This allows ML to continue updating the title until user manually edits it
-                      if (value.isNotEmpty && !isSaving.value) {
-                        isTitleManuallyEdited.value = true;
-                      }
-                      // Set unsaved changes flag but DON'T call saveNote()
-                      // The title will be saved when the content changes or when navigating away
-                      hasUnsavedChanges.value = true;
-                    },
-                  ),
-                ),
-
-                // Rich text toolbar
-                QuillSimpleToolbar(
-                  controller: controller,
-                  config: const QuillSimpleToolbarConfig(
-                    showAlignmentButtons: true,
-                    showBackgroundColorButton: false,
-                    showClearFormat: true,
-                    showCodeBlock: true,
-                    showFontFamily: false,
-                    showFontSize: false,
-                    showHeaderStyle: true,
-                    showInlineCode: false,
-                    showLink: false,
-                    showListBullets: true,
-                    showListCheck: false,
-                    showListNumbers: true,
-                    showQuote: true,
-                    showRedo: true,
-                    showSearchButton: false,
-                    showSmallButton: false,
-                    showStrikeThrough: true,
-                    showSubscript: false,
-                    showSuperscript: false,
-                    showUnderLineButton: true,
-                    showUndo: true,
-                  ),
-                ),
-                const Divider(height: 1, thickness: 1),
-
-                // Custom image/camera toolbar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: Colors.grey.shade100,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.photo_library, size: 20),
-                        tooltip: 'Insert from Gallery',
-                        onPressed: () => insertImage(ImageSource.gallery),
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Title TextField
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade300, width: 1),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 20),
-                        tooltip: 'Take Photo',
-                        onPressed: () => insertImage(ImageSource.camera),
+                    ),
+                    child: TextField(
+                      controller: titleController,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Insert Image',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
+                      decoration: const InputDecoration(
+                        hintText: 'Note Title',
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                      onChanged: (value) {
+                        // Only mark as manually edited if user is typing (not during save)
+                        // This allows ML to continue updating the title until user manually edits it
+                        if (value.isNotEmpty && !isSaving.value) {
+                          isTitleManuallyEdited.value = true;
+                        }
+                        // Set unsaved changes flag but DON'T call saveNote()
+                        // The title will be saved when the content changes or when navigating away
+                        hasUnsavedChanges.value = true;
+                      },
+                    ),
+                  ),
+
+                  // Rich text toolbar
+                  QuillSimpleToolbar(
+                    controller: controller,
+                    config: const QuillSimpleToolbarConfig(
+                      showAlignmentButtons: true,
+                      showBackgroundColorButton: false,
+                      showClearFormat: true,
+                      showCodeBlock: true,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showHeaderStyle: true,
+                      showInlineCode: false,
+                      showLink: false,
+                      showListBullets: true,
+                      showListCheck: false,
+                      showListNumbers: true,
+                      showQuote: true,
+                      showRedo: true,
+                      showSearchButton: false,
+                      showSmallButton: false,
+                      showStrikeThrough: true,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showUnderLineButton: true,
+                      showUndo: true,
+                    ),
+                  ),
+                  const Divider(height: 1, thickness: 1),
+
+                  // Custom image/camera toolbar
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    color: Colors.grey.shade100,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.photo_library, size: 20),
+                          tooltip: 'Insert from Gallery',
+                          onPressed: () => insertImage(ImageSource.gallery),
                         ),
-                      ),
-                    ],
+                        IconButton(
+                          icon: const Icon(Icons.camera_alt, size: 20),
+                          tooltip: 'Take Photo',
+                          onPressed: () => insertImage(ImageSource.camera),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Insert Image',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(height: 1, thickness: 1),
-                // Rich text editor
-                Expanded(
-                  child: Container(
+                  const Divider(height: 1, thickness: 1),
+
+                  // Rich text editor
+                  Container(
                     padding: const EdgeInsets.all(16.0),
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height - 400,
+                    ),
                     child: QuillEditor.basic(
                       controller: controller,
                       focusNode: focusNode,
-                      scrollController: scrollController,
                       config: const QuillEditorConfig(
                         padding: EdgeInsets.zero,
-                        scrollable: true,
+                        scrollable: false,
                         autoFocus: false,
                         expands: false,
                         placeholder: 'Start typing...',
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
