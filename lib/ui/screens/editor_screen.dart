@@ -33,6 +33,7 @@ class EditorScreen extends HookConsumerWidget {
     final hasUnsavedChanges = useState(false);
     final isInitialLoad = useState(true);
     final isTitleManuallyEdited = useState(false);
+    final showToolbar = useState(false);
 
     // Dispose resources when widget is disposed
     useEffect(() {
@@ -191,6 +192,18 @@ class EditorScreen extends HookConsumerWidget {
       final subscription = controller.document.changes.listen((_) => listener());
       return subscription.cancel;
     }, [controller, isInitialLoad.value]);
+
+    // Listen to selection changes to show/hide toolbar
+    useEffect(() {
+      void selectionListener() {
+        final selection = controller.selection;
+        // Show toolbar if text is selected (selection is not collapsed)
+        showToolbar.value = !selection.isCollapsed && selection.extentOffset > selection.baseOffset;
+      }
+
+      controller.addListener(selectionListener);
+      return () => controller.removeListener(selectionListener);
+    }, [controller]);
 
     // Image insertion methods
     Future<void> insertImage(ImageSource source) async {
@@ -394,34 +407,36 @@ class EditorScreen extends HookConsumerWidget {
                   ),
                 ),
 
-                // Rich text toolbar
-                QuillSimpleToolbar(
-                  controller: controller,
-                  config: const QuillSimpleToolbarConfig(
-                    showAlignmentButtons: true,
-                    showBackgroundColorButton: false,
-                    showClearFormat: true,
-                    showCodeBlock: true,
-                    showFontFamily: false,
-                    showFontSize: false,
-                    showHeaderStyle: true,
-                    showInlineCode: false,
-                    showLink: false,
-                    showListBullets: true,
-                    showListCheck: false,
-                    showListNumbers: true,
-                    showQuote: true,
-                    showRedo: true,
-                    showSearchButton: false,
-                    showSmallButton: false,
-                    showStrikeThrough: true,
-                    showSubscript: false,
-                    showSuperscript: false,
-                    showUnderLineButton: true,
-                    showUndo: true,
+                // Rich text toolbar - only visible when text is selected
+                if (showToolbar.value) ...[
+                  QuillSimpleToolbar(
+                    controller: controller,
+                    config: const QuillSimpleToolbarConfig(
+                      showAlignmentButtons: true,
+                      showBackgroundColorButton: false,
+                      showClearFormat: true,
+                      showCodeBlock: true,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showHeaderStyle: true,
+                      showInlineCode: false,
+                      showLink: false,
+                      showListBullets: true,
+                      showListCheck: false,
+                      showListNumbers: true,
+                      showQuote: true,
+                      showRedo: true,
+                      showSearchButton: false,
+                      showSmallButton: false,
+                      showStrikeThrough: true,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showUnderLineButton: true,
+                      showUndo: true,
+                    ),
                   ),
-                ),
-                const Divider(height: 1, thickness: 1),
+                  const Divider(height: 1, thickness: 1),
+                ],
 
                 // Custom image/camera toolbar
                 Container(
