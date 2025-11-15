@@ -7,6 +7,7 @@ import '../../data/db/vault_manager.dart';
 import '../../data/models/note.dart';
 import '../../providers/notes_providers.dart';
 import '../../providers/pin_provider.dart';
+import '../../providers/lifecycle_provider.dart';
 import '../widgets/note_tile.dart';
 import 'editor_screen.dart';
 import 'pin_entry_screen.dart';
@@ -268,6 +269,9 @@ class NotesListScreen extends HookConsumerWidget {
 
       if (source == null) return;
 
+      // Set flag to prevent vault from locking while image picker is open
+      ref.read(isSystemUiOpenProvider.notifier).state = true;
+
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
@@ -275,6 +279,9 @@ class NotesListScreen extends HookConsumerWidget {
         maxHeight: 1920,
         imageQuality: 85,
       );
+
+      // Clear flag now that image picker is closed
+      ref.read(isSystemUiOpenProvider.notifier).state = false;
 
       if (image == null) return;
 
@@ -297,6 +304,9 @@ class NotesListScreen extends HookConsumerWidget {
         );
       }
     } catch (e) {
+      // Make sure to clear flag even if there's an error
+      ref.read(isSystemUiOpenProvider.notifier).state = false;
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to create image note: $e')),

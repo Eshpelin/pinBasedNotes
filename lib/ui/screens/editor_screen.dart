@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:dart_quill_delta/dart_quill_delta.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/notes_providers.dart';
+import '../../providers/lifecycle_provider.dart';
 import '../../utils/debounce.dart';
 import '../../utils/date_format.dart';
 import '../../utils/ml_title_generator.dart';
@@ -230,6 +231,9 @@ class EditorScreen extends HookConsumerWidget {
     // Image insertion methods
     Future<void> insertImage(ImageSource source) async {
       try {
+        // Set flag to prevent vault from locking while image picker is open
+        ref.read(isSystemUiOpenProvider.notifier).state = true;
+
         final ImagePicker picker = ImagePicker();
         final XFile? image = await picker.pickImage(
           source: source,
@@ -237,6 +241,9 @@ class EditorScreen extends HookConsumerWidget {
           maxHeight: 1920,
           imageQuality: 85,
         );
+
+        // Clear flag now that image picker is closed
+        ref.read(isSystemUiOpenProvider.notifier).state = false;
 
         if (image == null) return;
 
@@ -264,6 +271,9 @@ class EditorScreen extends HookConsumerWidget {
         hasUnsavedChanges.value = true;
         saveNote();
       } catch (e) {
+        // Make sure to clear flag even if there's an error
+        ref.read(isSystemUiOpenProvider.notifier).state = false;
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to insert image: $e')),
