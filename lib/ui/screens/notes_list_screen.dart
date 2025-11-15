@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/db/vault_manager.dart';
 import '../../data/models/note.dart';
 import '../../providers/notes_providers.dart';
@@ -18,6 +20,7 @@ class NotesListScreen extends HookConsumerWidget {
     final pin = ref.watch(pinProvider);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
+    final isFabMenuOpen = useState(false);
 
     return Scaffold(
       appBar: AppBar(
@@ -139,9 +142,53 @@ class NotesListScreen extends HookConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _createNote(context, ref),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // FAB Menu Options (shown when menu is open)
+          if (isFabMenuOpen.value) ...[
+            // Image Note
+            _FabMenuItem(
+              icon: Icons.image,
+              label: 'Image Note',
+              onPressed: () async {
+                isFabMenuOpen.value = false;
+                await _createImageNote(context, ref);
+              },
+            ),
+            const SizedBox(height: 12),
+            // Paste Text Note
+            _FabMenuItem(
+              icon: Icons.content_paste,
+              label: 'Paste Text',
+              onPressed: () async {
+                isFabMenuOpen.value = false;
+                await _createNoteFromClipboard(context, ref);
+              },
+            ),
+            const SizedBox(height: 12),
+            // Compose New
+            _FabMenuItem(
+              icon: Icons.edit,
+              label: 'Compose New',
+              onPressed: () async {
+                isFabMenuOpen.value = false;
+                await _createNote(context, ref);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Main FAB
+          FloatingActionButton(
+            onPressed: () => isFabMenuOpen.value = !isFabMenuOpen.value,
+            child: AnimatedRotation(
+              turns: isFabMenuOpen.value ? 0.125 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(isFabMenuOpen.value ? Icons.close : Icons.add),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -183,6 +230,108 @@ class NotesListScreen extends HookConsumerWidget {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => EditorScreen(noteId: note.id),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create note: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _createImageNote(BuildContext context, WidgetRef ref) async {
+    try {
+      // Show bottom sheet to choose image source
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      // Create note with image
+      final notifier = ref.read(notesNotifierProvider.notifier);
+      final note = await notifier.createNote();
+
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EditorScreen(noteId: note.id),
+          ),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Note created - insert image in editor'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create image note: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _createNoteFromClipboard(BuildContext context, WidgetRef ref) async {
+    try {
+      final clipboardData = await Clipboard.getData('text/plain');
+
+      if (clipboardData?.text == null || clipboardData!.text!.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Clipboard is empty')),
+          );
+        }
+        return;
+      }
+
+      final notifier = ref.read(notesNotifierProvider.notifier);
+      final note = await notifier.createNote();
+
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EditorScreen(noteId: note.id),
+          ),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Note created with clipboard text'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -409,6 +558,53 @@ class _NoSearchResults extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FabMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _FabMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FloatingActionButton.small(
+          heroTag: label,
+          onPressed: onPressed,
+          child: Icon(icon),
+        ),
+      ],
     );
   }
 }
