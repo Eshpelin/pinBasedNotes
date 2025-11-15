@@ -71,6 +71,7 @@ class NotesListScreen extends ConsumerWidget {
                 note: note,
                 onTap: () => _openEditor(context, note.id),
                 onDelete: () => _deleteNote(context, ref, note),
+                onDeleteConfirmed: () => _deleteNoteConfirmed(context, ref, note),
               );
             },
           );
@@ -180,20 +181,24 @@ class NotesListScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      try {
-        final notifier = ref.read(notesNotifierProvider.notifier);
-        await notifier.deleteNote(note.id);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Note deleted')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete note: $e')),
-          );
-        }
+      await _deleteNoteConfirmed(context, ref, note);
+    }
+  }
+
+  Future<void> _deleteNoteConfirmed(BuildContext context, WidgetRef ref, Note note) async {
+    try {
+      final notifier = ref.read(notesNotifierProvider.notifier);
+      await notifier.deleteNote(note.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Note deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete note: $e')),
+        );
       }
     }
   }

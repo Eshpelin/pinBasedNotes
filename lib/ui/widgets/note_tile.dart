@@ -7,12 +7,14 @@ class NoteTile extends StatelessWidget {
   final Note note;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback onDeleteConfirmed;
 
   const NoteTile({
     super.key,
     required this.note,
     required this.onTap,
     required this.onDelete,
+    required this.onDeleteConfirmed,
   });
 
   @override
@@ -50,7 +52,7 @@ class NoteTile extends StatelessWidget {
           ),
         );
       },
-      onDismissed: (direction) => onDelete(),
+      onDismissed: (direction) => onDeleteConfirmed(),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(
@@ -129,30 +131,7 @@ class NoteTile extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.grey),
               tooltip: 'Delete note',
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Note'),
-                    content: Text('Delete "${note.title}"?\n\nThis action cannot be undone.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed == true) {
-                  onDelete();
-                }
-              },
+              onPressed: onDelete,
             ),
           ],
         ),
