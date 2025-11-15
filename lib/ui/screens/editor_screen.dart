@@ -379,8 +379,9 @@ class EditorScreen extends HookConsumerWidget {
                       isDense: true,
                     ),
                     onChanged: (value) {
-                      // Mark as manually edited when user types
-                      if (value.isNotEmpty) {
+                      // Only mark as manually edited if user is typing (not during save)
+                      // This allows ML to continue updating the title until user manually edits it
+                      if (value.isNotEmpty && !isSaving.value) {
                         isTitleManuallyEdited.value = true;
                       }
                       // Set unsaved changes flag but DON'T call saveNote()
