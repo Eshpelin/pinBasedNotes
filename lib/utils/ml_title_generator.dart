@@ -277,71 +277,124 @@ class MLTitleGenerator {
   }
 
   /// Generate normal title using ML-enhanced extraction
+  /// Analyzes the ENTIRE text to create a meaningful summary
   static String _generateNormalTitle(String plainText, TextAnalysis analysis) {
-    // Split into sentences
-    final sentences = plainText.split(RegExp(r'[.!?\n]+'));
+    // Extract and score keywords from the entire text
+    final keywords = _extractKeywords(plainText);
 
-    // Score each sentence using ML features
-    final scoredSentences = <(String, double)>[];
-
-    for (final sentence in sentences) {
-      final trimmed = sentence.trim();
-      if (trimmed.isEmpty) continue;
-
-      // ML scoring: position, length, word quality
-      double score = 0.0;
-
-      // Feature: Position (slight preference for earlier sentences)
-      // Reduced bias to allow later, more substantive sentences to win
-      final position = sentences.indexOf(sentence);
-      score += max(0, 3 - position) * 0.2;
-
-      // Feature: Length (ideal length is 30-80 chars)
-      final length = trimmed.length;
-      if (length >= 30 && length <= 80) {
-        score += 3.0;
-      } else if (length >= 15 && length <= 100) {
-        score += 1.5;
-      }
-
-      // Feature: Word count (ideal is 4-8 words)
-      final wordCount = trimmed.split(RegExp(r'\s+')).length;
-      if (wordCount >= 4 && wordCount <= 8) {
-        score += 2.0;
-      } else if (wordCount >= 3 && wordCount <= 12) {
-        score += 1.0;
-      }
-
-      // Feature: Starts with capital
-      if (RegExp(r'^[A-Z]').hasMatch(trimmed)) {
-        score += 1.0;
-      }
-
-      // Feature: Has important words (ML keyword extraction)
-      final importantWords = ['how', 'why', 'what', 'today', 'learned',
-          'idea', 'note', 'remember', 'important', 'tip'];
-      for (final word in importantWords) {
-        if (trimmed.toLowerCase().contains(word)) {
-          score += 0.5;
-        }
-      }
-
-      scoredSentences.add((trimmed, score));
-    }
-
-    if (scoredSentences.isEmpty) {
+    if (keywords.isEmpty) {
       return '';
     }
 
-    // Select sentence with highest ML score
-    scoredSentences.sort((a, b) => b.$2.compareTo(a.$2));
-    String bestSentence = scoredSentences.first.$1;
+    // Take top 4-5 keywords to form the title
+    final topKeywords = keywords.take(5).map((kw) => kw.$1).toList();
+
+    // Create a natural-sounding title from keywords
+    String title = topKeywords.join(' ');
 
     // Clean and format the title
-    bestSentence = _cleanTitle(bestSentence);
-    bestSentence = _formatTitle(bestSentence);
+    title = _cleanTitle(title);
+    title = _formatTitle(title);
 
-    return bestSentence;
+    return title;
+  }
+
+  /// Extract and score keywords from entire text using ML techniques
+  /// Returns list of (keyword, score) tuples sorted by importance
+  static List<(String, double)> _extractKeywords(String text) {
+    // Common stop words to filter out
+    final stopWords = {
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
+      'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+      'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
+      'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+      'my', 'your', 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us',
+      'them', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all',
+      'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such',
+      'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very',
+      'just', 'about', 'into', 'through', 'during', 'before', 'after', 'above',
+      'below', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further',
+      'then', 'once',
+    };
+
+    // Extract all words
+    final words = text.toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length >= 3 && !stopWords.contains(w))
+        .toList();
+
+    if (words.isEmpty) {
+      return [];
+    }
+
+    // Calculate word frequencies
+    final wordFreq = <String, int>{};
+    final wordPositions = <String, List<int>>{};
+
+    for (int i = 0; i < words.length; i++) {
+      final word = words[i];
+      wordFreq[word] = (wordFreq[word] ?? 0) + 1;
+      wordPositions[word] = (wordPositions[word] ?? [])..add(i);
+    }
+
+    // Score each unique word using ML features
+    final scoredWords = <(String, double)>[];
+
+    for (final entry in wordFreq.entries) {
+      final word = entry.key;
+      final frequency = entry.value;
+      final positions = wordPositions[word]!;
+
+      double score = 0.0;
+
+      // Feature 1: Frequency (TF-IDF concept)
+      // Words that appear 2-3 times are often key concepts
+      if (frequency >= 2 && frequency <= 4) {
+        score += frequency * 2.0;
+      } else if (frequency >= 5) {
+        score += 8.0; // Cap for very frequent words
+      } else {
+        score += 1.0; // Single occurrence
+      }
+
+      // Feature 2: Early position bonus (first occurrence)
+      final firstPosition = positions.first;
+      final positionScore = max(0, 20 - firstPosition) * 0.1;
+      score += positionScore;
+
+      // Feature 3: Word length (longer words often more meaningful)
+      if (word.length >= 6 && word.length <= 12) {
+        score += 2.0;
+      } else if (word.length >= 4) {
+        score += 1.0;
+      }
+
+      // Feature 4: Capitalization in original text (proper nouns)
+      final capitalizedCount = text.split(RegExp(r'\s+'))
+          .where((w) => w.toLowerCase() == word && RegExp(r'^[A-Z]').hasMatch(w))
+          .length;
+      if (capitalizedCount > 0) {
+        score += capitalizedCount * 1.5;
+      }
+
+      // Feature 5: Important domain words
+      final importantWords = {
+        'learn', 'learned', 'learning', 'today', 'idea', 'important',
+        'remember', 'note', 'tip', 'guide', 'tutorial', 'review',
+        'summary', 'meeting', 'project', 'plan', 'goal', 'task',
+      };
+      if (importantWords.contains(word)) {
+        score += 3.0;
+      }
+
+      scoredWords.add((word, score));
+    }
+
+    // Sort by score (highest first)
+    scoredWords.sort((a, b) => b.$2.compareTo(a.$2));
+
+    return scoredWords;
   }
 
   /// Clean title by removing formatting
