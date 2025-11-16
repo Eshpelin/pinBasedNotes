@@ -965,9 +965,9 @@ This app is provided as-is, without warranty of any kind. While we use industry-
 ## Contact
 
 For issues, questions, or suggestions:
-- **Issues**: [GitHub Issues](https://github.com/yourusername/pinBasedNotes/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/pinBasedNotes/discussions)
-- **Security**: For security vulnerabilities, please email [security@example.com] rather than filing public issues
+- **Issues**: [GitHub Issues](https://github.com/Eshpelin/pinBasedNotes/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Eshpelin/pinBasedNotes/discussions)
+- **Security**: For security vulnerabilities, please email [hello@eshpel.in](mailto:hello@eshpel.in) rather than filing public issues
 
 ---
 
