@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
@@ -149,6 +151,16 @@ class VaultManager {
     }
   }
 
+  /// Generate a secure hash of the PIN for use in filenames
+  ///
+  /// This prevents the PIN from being visible in plaintext in the filesystem.
+  /// The actual PIN is still used as the encryption password for SQLCipher.
+  static String _hashPin(String pin) {
+    final bytes = utf8.encode(pin);
+    final hash = sha256.convert(bytes);
+    return hash.toString();
+  }
+
   /// Get the file path for a vault database
   static Future<String> _getVaultPath(String pin) async {
     final appDir = await getApplicationDocumentsDirectory();
@@ -159,7 +171,9 @@ class VaultManager {
       await dbDir.create(recursive: true);
     }
 
-    // Construct path: <app_dir>/databases/vault_<pin>.db
-    return join(dbDir.path, 'vault_$pin.db');
+    // Construct path using hashed PIN for security
+    // The hash ensures the PIN is not visible in the filesystem
+    final pinHash = _hashPin(pin);
+    return join(dbDir.path, 'vault_$pinHash.db');
   }
 }
