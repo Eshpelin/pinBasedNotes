@@ -84,3 +84,4 @@ coverage/
 # Exceptions
 !.gitkeep
 *.apk
+*.zip
