@@ -12,6 +12,7 @@ class PinEntryScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pinController = useTextEditingController();
+    final pinText = useState(''); // Track text for UI updates
     final errorMessage = useState<String?>(null);
     final isLoading = useState(false);
     final obscurePin = useState(true);
@@ -130,9 +131,11 @@ class PinEntryScreen extends HookConsumerWidget {
                     ),
                     errorText: errorMessage.value,
                     errorMaxLines: 2,
-                    counterText: '${pinController.text.length}/20',
+                    counterText: '${pinText.value.length}/20',
                   ),
-                  onChanged: (_) {
+                  onChanged: (value) {
+                    // Update text state for UI rebuilds
+                    pinText.value = value;
                     // Clear error when user starts typing
                     if (errorMessage.value != null) {
                       errorMessage.value = null;
@@ -152,7 +155,7 @@ class PinEntryScreen extends HookConsumerWidget {
                   width: double.infinity,
                   height: 56,
                   child: FilledButton(
-                    onPressed: !isLoading.value && pinController.text.length >= 4
+                    onPressed: !isLoading.value && pinText.value.length >= 4
                         ? onEnter
                         : null,
                     child: isLoading.value
