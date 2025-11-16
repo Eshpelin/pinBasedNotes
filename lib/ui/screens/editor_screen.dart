@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:dart_quill_delta/dart_quill_delta.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/notes_providers.dart';
@@ -502,12 +503,13 @@ class EditorScreen extends HookConsumerWidget {
                       controller: controller,
                       focusNode: focusNode,
                       scrollController: scrollController,
-                      config: const QuillEditorConfig(
+                      config: QuillEditorConfig(
                         padding: EdgeInsets.zero,
                         scrollable: true,
                         autoFocus: false,
                         expands: true,
                         placeholder: 'Start typing...',
+                        embedBuilders: FlutterQuillEmbeds.editorBuilders(),
                       ),
                       ),
                     ),
