@@ -75,21 +75,16 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
 
 ## Screenshots
 
-<div align="center">
+<p align="center">
+  <img src="screenshots/Screenshot_20251116_165549.png" width="200" />
+  <img src="screenshots/Screenshot_20251116_165600.png" width="200" />
+  <img src="screenshots/Screenshot_20251116_165608.png" width="200" />
+  <img src="screenshots/Screenshot_20251116_165832.png" width="200" />
+</p>
 
-### PIN Entry Screen
-<img src="screenshots/Screenshot_20251116_165549.png" width="250" alt="PIN Entry Screen">
-
-### Notes List
-<img src="screenshots/Screenshot_20251116_165600.png" width="250" alt="Notes List Screen">
-
-### Rich Text Editor
-<img src="screenshots/Screenshot_20251116_165608.png" width="250" alt="Rich Text Editor">
-
-### Note with Image
-<img src="screenshots/Screenshot_20251116_165832.png" width="250" alt="Note with Image">
-
-</div>
+<p align="center">
+  <em>Left to Right: PIN Entry • Notes List • Rich Text Editor • Note with Image</em>
+</p>
 
 ---
 
