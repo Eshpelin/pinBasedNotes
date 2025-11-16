@@ -310,13 +310,16 @@ class NotesListScreen extends HookConsumerWidget {
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => EditorScreen(noteId: note.id),
+            builder: (context) => EditorScreen(
+              noteId: note.id,
+              initialImagePath: image.path,
+            ),
           ),
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Note created - insert image in editor'),
+            content: Text('Image note created'),
             duration: Duration(seconds: 2),
           ),
         );

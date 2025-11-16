@@ -17,8 +17,14 @@ import '../../utils/ml_title_generator.dart';
 class EditorScreen extends HookConsumerWidget {
   final String noteId;
   final String? initialText;
+  final String? initialImagePath;
 
-  const EditorScreen({super.key, required this.noteId, this.initialText});
+  const EditorScreen({
+    super.key,
+    required this.noteId,
+    this.initialText,
+    this.initialImagePath,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -75,6 +81,26 @@ class EditorScreen extends HookConsumerWidget {
                 controller.document.insert(0, initialText!);
                 hasUnsavedChanges.value = true;
                 needsInitialSave.value = true;
+              }
+
+              // If initial image was provided, insert it asynchronously
+              if (initialImagePath != null && initialImagePath!.isNotEmpty) {
+                print('Inserting initial image: $initialImagePath');
+                File(initialImagePath!).readAsBytes().then((bytes) {
+                  try {
+                    final base64Image = base64Encode(bytes);
+                    final extension = initialImagePath!.split('.').last;
+                    final dataUrl = 'data:image/$extension;base64,$base64Image';
+                    controller.document.insert(0, BlockEmbed.image(dataUrl));
+                    hasUnsavedChanges.value = true;
+                    needsInitialSave.value = true;
+                    print('Initial image inserted successfully');
+                  } catch (e) {
+                    print('Error encoding/inserting initial image: $e');
+                  }
+                }).catchError((e) {
+                  print('Error reading initial image file: $e');
+                });
               }
 
               // Check if title appears to be auto-generated using ML
