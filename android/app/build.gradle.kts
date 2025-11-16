@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.pin_notes"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.pin_notes"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 26  // Required for tflite_flutter
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -41,9 +41,4 @@ android {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    // ML Kit GenAI for on-device summarization with Gemini Nano
-    implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")
 }
