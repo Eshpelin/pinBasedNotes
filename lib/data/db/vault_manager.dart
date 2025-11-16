@@ -51,8 +51,8 @@ class VaultManager {
       }
 
       // Validate PIN
-      if (pin.isEmpty || pin.length < 4 || pin.length > 10) {
-        throw VaultException('PIN must be between 4 and 10 digits');
+      if (pin.isEmpty || pin.length < 4 || pin.length > 20) {
+        throw VaultException('PIN must be between 4 and 20 characters');
       }
 
       // Get the database path
