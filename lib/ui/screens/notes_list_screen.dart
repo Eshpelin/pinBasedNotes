@@ -411,7 +411,7 @@ class NotesListScreen extends HookConsumerWidget {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && context.mounted) {
       await _deleteNoteConfirmed(context, ref, note);
     }
   }
