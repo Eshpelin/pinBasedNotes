@@ -11,32 +11,25 @@ class PinEntryScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pin = useState('');
+    final pinController = useTextEditingController();
     final errorMessage = useState<String?>(null);
     final isLoading = useState(false);
+    final obscurePin = useState(true);
+    final focusNode = useFocusNode();
 
-    void onNumberPressed(String number) {
-      if (pin.value.length < 10) {
-        pin.value += number;
-        errorMessage.value = null;
-      }
-    }
-
-    void onBackspace() {
-      if (pin.value.isNotEmpty) {
-        pin.value = pin.value.substring(0, pin.value.length - 1);
-        errorMessage.value = null;
-      }
-    }
-
-    void onClear() {
-      pin.value = '';
-      errorMessage.value = null;
-    }
+    // Auto-focus the text field when screen loads
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        focusNode.requestFocus();
+      });
+      return null;
+    }, []);
 
     Future<void> onEnter() async {
-      if (pin.value.length < 4 || pin.value.length > 10) {
-        errorMessage.value = 'PIN must be 4-10 digits';
+      final pin = pinController.text.trim();
+
+      if (pin.length < 4 || pin.length > 20) {
+        errorMessage.value = 'PIN must be 4-20 characters';
         return;
       }
 
@@ -45,10 +38,10 @@ class PinEntryScreen extends HookConsumerWidget {
 
       try {
         // Try to open the vault with this PIN
-        await VaultManager.openVault(pin.value);
+        await VaultManager.openVault(pin);
 
         // Success - set the PIN in the provider and navigate
-        ref.read(pinProvider.notifier).state = pin.value;
+        ref.read(pinProvider.notifier).state = pin;
 
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
@@ -77,8 +70,6 @@ class PinEntryScreen extends HookConsumerWidget {
       }
     }
 
-    final isPinValid = pin.value.length >= 4 && pin.value.length <= 10;
-
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -87,6 +78,8 @@ class PinEntryScreen extends HookConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const SizedBox(height: 48),
+
                 // App Title
                 Icon(
                   Icons.lock_outline,
@@ -112,219 +105,124 @@ class PinEntryScreen extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // PIN Display
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: errorMessage.value != null ? Colors.red : Colors.grey.shade300,
-                      width: 2,
+                // PIN Input Field
+                TextField(
+                  controller: pinController,
+                  focusNode: focusNode,
+                  obscureText: obscurePin.value,
+                  maxLength: 20,
+                  autofocus: true,
+                  enabled: !isLoading.value,
+                  decoration: InputDecoration(
+                    labelText: 'PIN',
+                    hintText: 'Enter 4-20 characters',
+                    prefixIcon: const Icon(Icons.vpn_key),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePin.value ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        obscurePin.value = !obscurePin.value;
+                      },
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    pin.value.isEmpty ? 'Enter PIN' : '•' * pin.value.length,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: pin.value.isEmpty ? Colors.grey : Colors.black,
-                      letterSpacing: 8,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    errorText: errorMessage.value,
+                    errorMaxLines: 2,
+                    counterText: '${pinController.text.length}/20',
                   ),
-                ),
-                const SizedBox(height: 8),
-
-                // PIN Length Indicator
-                Text(
-                  '${pin.value.length}/10 digits',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-
-                // Error Message
-                if (errorMessage.value != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            errorMessage.value!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 48),
-
-                // Numeric Keypad
-                _NumericKeypad(
-                  onNumberPressed: onNumberPressed,
-                  onBackspace: onBackspace,
-                  onClear: onClear,
-                  onEnter: onEnter,
-                  isEnterEnabled: isPinValid && !isLoading.value,
-                  isLoading: isLoading.value,
+                  onChanged: (_) {
+                    // Clear error when user starts typing
+                    if (errorMessage.value != null) {
+                      errorMessage.value = null;
+                    }
+                  },
+                  onSubmitted: (_) {
+                    if (!isLoading.value) {
+                      onEnter();
+                    }
+                  },
                 ),
 
                 const SizedBox(height: 32),
 
+                // Enter Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton(
+                    onPressed: !isLoading.value && pinController.text.length >= 4
+                        ? onEnter
+                        : null,
+                    child: isLoading.value
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Unlock Vault',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 48),
+
                 // Info Text
-                const Text(
-                  'Each PIN creates a separate encrypted vault.\nForgetting your PIN means losing access forever.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                            color: Colors.blue.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Important',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• Each PIN creates a separate encrypted vault\n'
+                        '• Use alphanumeric characters for stronger security\n'
+                        '• Forgetting your PIN means losing access forever\n'
+                        '• Recommended: 12+ characters (letters + numbers)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade900,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _NumericKeypad extends StatelessWidget {
-  final Function(String) onNumberPressed;
-  final VoidCallback onBackspace;
-  final VoidCallback onClear;
-  final VoidCallback onEnter;
-  final bool isEnterEnabled;
-  final bool isLoading;
-
-  const _NumericKeypad({
-    required this.onNumberPressed,
-    required this.onBackspace,
-    required this.onClear,
-    required this.onEnter,
-    required this.isEnterEnabled,
-    required this.isLoading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Rows 1-3: Numbers 1-9
-        for (int row = 0; row < 3; row++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (int col = 1; col <= 3; col++)
-                  _KeypadButton(
-                    text: '${row * 3 + col}',
-                    onPressed: () => onNumberPressed('${row * 3 + col}'),
-                  ),
-              ],
-            ),
-          ),
-
-        // Row 4: Clear, 0, Backspace
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _KeypadButton(
-              text: 'C',
-              onPressed: onClear,
-              isSpecial: true,
-            ),
-            _KeypadButton(
-              text: '0',
-              onPressed: () => onNumberPressed('0'),
-            ),
-            _KeypadButton(
-              icon: Icons.backspace_outlined,
-              onPressed: onBackspace,
-              isSpecial: true,
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Enter Button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: FilledButton(
-            onPressed: isEnterEnabled ? onEnter : null,
-            child: isLoading
-                ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Enter',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _KeypadButton extends StatelessWidget {
-  final String? text;
-  final IconData? icon;
-  final VoidCallback onPressed;
-  final bool isSpecial;
-
-  const _KeypadButton({
-    this.text,
-    this.icon,
-    required this.onPressed,
-    this.isSpecial = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSpecial ? Colors.grey.shade200 : Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: icon != null
-            ? Icon(icon, size: 28)
-            : Text(
-                text!,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
       ),
     );
   }
