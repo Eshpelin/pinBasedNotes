@@ -34,9 +34,9 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
 
 - **🔒 True Multi-Vault Security**: Each PIN is a separate vault - not just different passwords for the same data
 - **📵 100% Offline**: No internet permission, no cloud sync, no telemetry - your data never leaves your device
-- **🤖 On-Device ML**: Automatic title generation using Google's ML Kit Gemini Nano (no server calls)
 - **📝 Rich Text Editing**: Full-featured editor with formatting, images, and more
 - **🚀 Zero Setup**: No account creation, no configuration - just enter a PIN and start writing
+- **💾 Auto-Save**: Real-time saving ensures no data loss
 
 ---
 
@@ -52,7 +52,6 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
   - Image embedding with base64 encoding
   - Code blocks and quotes
   - Links and inline formatting
-- **Smart Title Generation**: On-device ML (ML Kit Gemini Nano) automatically generates note titles from content
 - **Auto-Lock Security**: Automatically locks when app goes to background
 - **Auto-Save**: Real-time saving with debouncing to prevent data loss
 - **Multiple Creation Flows**:
@@ -61,6 +60,7 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
   - Image note (camera or gallery)
 - **Swipe-to-Delete**: Intuitive gesture-based note deletion with confirmation
 - **Last Edited Timestamps**: Track when notes were last modified
+- **Alphanumeric PINs**: Support for strong 4-20 character PINs with letters, numbers, and symbols
 
 ### Privacy & Security
 
@@ -97,8 +97,8 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
 - **State Management**: Riverpod 2.5+ with Flutter Hooks 0.20+
 - **Database**: SQLCipher (via sqflite_sqlcipher 3.1+)
 - **Rich Text**: Flutter Quill 11.5+ with Extensions
-- **ML Processing**: Google ML Kit GenAI (Gemini Nano)
 - **Image Handling**: Image Picker 1.1+
+- **Encryption**: 256-bit AES with PBKDF2 key derivation
 
 ### Architecture Decisions
 
@@ -153,27 +153,7 @@ PIN Notes is a lightweight, privacy-first Android application that provides mili
 - Custom toolbar configuration for mobile use
 - Document controller lifecycle managed via hooks
 
-#### 4. **On-Device ML with ML Kit**
-
-**Why ML Kit Gemini Nano?**
-- **Privacy**: All processing happens on-device
-- **No API Costs**: No server calls or API keys needed
-- **Works Offline**: No internet dependency
-- **Fast**: Low latency for short text summarization
-
-**Fallback Strategy:**
-When ML Kit is unavailable or fails:
-1. Extract keywords using TF-IDF approach
-2. Select most relevant words from note content
-3. Capitalize and format as title
-
-**ML Model Download:**
-- Model downloaded on-demand by Google Play Services
-- ~40MB download size
-- Cached for future use
-- Graceful degradation if unavailable
-
-#### 5. **Lifecycle Management**
+#### 4. **Lifecycle Management**
 
 **Auto-Lock Implementation:**
 
@@ -269,7 +249,7 @@ detached → App being destroyed, vault should lock
 - **Flutter SDK**: 3.0.0 or higher ([Install Flutter](https://flutter.dev/docs/get-started/install))
 - **Android Studio** or **VS Code** with Flutter extensions
 - **Android SDK**:
-  - Min SDK: 26 (Android 8.0 Oreo) - required for ML Kit
+  - Min SDK: 26 (Android 8.0 Oreo)
   - Target SDK: 35 (Android 15)
   - Compile SDK: 35
 - **Java**: Version 17 or higher
@@ -363,7 +343,6 @@ lib/
 │   ├── notes_provider.dart            # Notes CRUD operations
 │   └── lifecycle_provider.dart        # App lifecycle observation & auto-lock
 ├── services/
-│   └── ml_title_generator.dart        # ML Kit integration for title generation
 ├── ui/
 │   ├── screens/
 │   │   ├── pin_entry_screen.dart      # PIN input and vault unlock
@@ -404,7 +383,7 @@ test/
 - Auto-save with 500ms debouncing
 - Image insertion (camera/gallery)
 - Initial content loading (text/image)
-- ML-powered title generation
+- Auto-save with debouncing
 - Document change tracking
 
 #### `notes_list_screen.dart`
@@ -424,7 +403,7 @@ test/
 - ✨ **Rich Text Editor**: Full QuillEditor integration with formatting toolbar
 - 🖼️ **Image Support**: Embed images from camera or gallery with base64 encoding
 - 📋 **Clipboard Paste**: Quick note creation from clipboard content
-- 🤖 **ML Title Generation**: On-device Gemini Nano for automatic title creation
+- 📝 **Alphanumeric PINs**: Support for 4-20 character PINs with letters, numbers, symbols
 - 💾 **Auto-Save**: Real-time saving with debouncing (500ms delay)
 - 🗑️ **Swipe-to-Delete**: Gesture-based deletion with confirmation dialog
 - 📱 **Multiple Creation Flows**: Blank note, clipboard paste, or image note
@@ -496,12 +475,6 @@ test/
    - No sync between devices
    - No export/import functionality
    - Vault tied to specific device
-
-5. **ML Kit Model Download**
-   - Gemini Nano model downloaded on-demand (~40MB)
-   - Requires Google Play Services
-   - May not be available on all devices
-   - Fallback to keyword extraction
 
 ### Performance Considerations
 
@@ -739,8 +712,8 @@ tflite_flutter: ^0.10.4          # TensorFlow Lite (not currently used)
 ### Android-Specific Dependencies
 
 ```gradle
-// ML Kit GenAI for on-device summarization
-implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")
+// No ML dependencies currently
+// No ML dependencies currently
 ```
 
 ### Development Dependencies
@@ -777,7 +750,6 @@ Current test coverage focuses on widget tests for UI components:
 
 **Areas Needing Tests:**
 - Unit tests for VaultManager
-- Unit tests for ML title generation
 - Integration tests for note CRUD
 - Widget tests for editor screen
 - Provider tests for state management
@@ -846,12 +818,6 @@ Contributions are welcome! Please follow these guidelines:
 - Ensure Java 17+ is installed: `java -version`
 - Clean build: `flutter clean && flutter pub get`
 - Check Android SDK installation: `flutter doctor`
-
-**Q: ML Kit title generation not working**
-- Requires Google Play Services on device
-- Model downloads automatically (~40MB)
-- May not be available on all devices/regions
-- Falls back to keyword extraction
 
 **Q: Images not displaying in notes**
 - Ensure flutter_quill_extensions is installed
@@ -938,7 +904,6 @@ A: No. The app has no internet permission and collects zero telemetry or analyti
 A: Not currently. This is a planned feature with optional encrypted cloud sync.
 
 **Q: Why does the app require Google Play Services?**
-A: Only for on-device ML title generation (ML Kit). The app works without it, using keyword fallback.
 
 **Q: How do I backup my vaults?**
 A: Currently, you must backup the entire app data folder via device backup. Proper export/import is planned.
@@ -950,7 +915,6 @@ A: Currently, you must backup the entire app data folder via device backup. Prop
 - **SQLCipher** - Zetetic LLC for encrypted SQLite
 - **Flutter** - Google for the amazing framework
 - **Quill** - Flutter Quill team for rich text editing
-- **ML Kit** - Google for on-device ML capabilities
 - **Riverpod** - Remi Rousselet for state management
 - **Flutter Hooks** - Remi Rousselet for hooks implementation
 
