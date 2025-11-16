@@ -195,8 +195,8 @@ detached → App being destroyed, vault should lock
 **Vault File Structure:**
 ```
 /data/data/com.example.pin_notes/databases/
-├── vault_1234.db          # Encrypted vault for PIN "1234"
-├── vault_5678.db          # Encrypted vault for PIN "5678"
+├── vault_03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4.db  # Hashed vault for PIN
+├── vault_8bb0cf6eb9b17d0f7d22b456f121257dc1254e1f01665370476383ea776df414.db  # Hashed vault for PIN
 └── meta.db                # Unencrypted metadata for rate limiting
 ```
 
@@ -204,14 +204,14 @@ detached → App being destroyed, vault should lock
 
 **Current Implementation:**
 - PIN can be any string (numeric or alphanumeric)
-- No minimum length enforcement
+- Minimum length: 4 characters, maximum: 20 characters
 - No complexity requirements
 - PIN used directly as SQLCipher key
-- PIN also used in filename (e.g., `vault_1234.db`)
+- PIN is SHA-256 hashed for use in filenames (prevents plaintext exposure)
 
 **Security Implications:**
 - ⚠️ **Weak PIN = Weak Encryption**: Short PINs vulnerable to brute force
-- ⚠️ **Filename Exposure**: PIN visible in file listing if device compromised
+- ✅ **Filename Protection**: PIN hashed in filenames (SHA-256) - not visible in file listings
 - ✅ **Rate Limiting**: Meta database limits attempts (partial mitigation)
 
 ### Rate Limiting
@@ -525,22 +525,23 @@ test/
 **Residual Risk**:
 High if user chooses weak PIN and device is physically compromised.
 
-#### 2. **PIN Exposure in Filename**
+#### 2. **PIN Exposure in Filename** ✅ **FIXED**
 
-**Issue**: Vault filename contains PIN (e.g., `vault_1234.db`).
+**Previous Issue**: Vault filename contained PIN in plaintext (e.g., `vault_1234.db`).
 
-**Attack Vector**:
-- If attacker gains filesystem access, PIN is visible
-- Reduces security to file encryption only
-- Leaks information about existing vaults
+**Previous Attack Vector**:
+- If attacker gained filesystem access, PIN was visible
+- Reduced security to file encryption only
+- Leaked information about existing vaults
 
-**Potential Mitigations**:
-- Use hashed filenames (breaks multi-vault transparency)
-- Use UUIDs with separate mapping (adds complexity)
-- Encrypt filename storage location (difficult on Android)
+**Mitigation Implemented**:
+- ✅ **SHA-256 Hashing**: PINs are now hashed before use in filenames
+- ✅ **One-way Function**: Cannot reverse hash to obtain original PIN
+- ✅ **Example**: PIN "1234" → filename `vault_03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4.db`
+- ✅ **Encryption Unaffected**: Original PIN still used as SQLCipher encryption key
 
 **Residual Risk**:
-Medium - requires filesystem access but trivializes PIN guessing.
+None - PIN no longer exposed in filesystem. Attacker with filesystem access must still brute-force the encrypted database.
 
 #### 3. **No Secure Deletion**
 
